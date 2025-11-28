@@ -1,16 +1,12 @@
-# compartimos_gastos
+# compartimos_gastos_app
 
-Compartimos Gastos App
+## Descripción del proyecto
 
-## Getting Started
+### Nombre
+CompartimosGastos
 
-This project is a starting point for a Flutter application.
+### Descripción  
+Aplicación multiplataforma que posibilita la formación de grupos de gastos, con la opción de invitar a los participantes afectados, para administrar y calcular automáticamente los saldos individuales. Incorpora el registro y la verificación de usuarios, la sincronización con un back-end para mantener la información a largo plazo, así como una interfaz diseñada para simplificar cómo visualizar quién le debe a quién y cómo saldar las deudas de manera equitativa.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Tecnología
+Se desarrollará con lenguaje Dart, framework Flutter, usando la parte del front-end, el cual permite ejecutar el mismo código para iOS, Android, Windows, Linux y Web. En el back-end, Firebase gestionará la autenticación de usuarios, mientras que Cloud Firestore almacenará los datos y proporcionará sincronización en tiempo real.
