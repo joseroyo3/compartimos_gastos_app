@@ -1,4 +1,6 @@
-# Miscellaneous
+# ----------------------
+# Miscellaneous & System
+# ----------------------
 *.class
 *.log
 *.pyc
@@ -11,35 +13,87 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# IntelliJ related
+# ----------------------
+# Editors & IDEs
+# ----------------------
+# IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code
+.vscode/
 
-# Flutter/Dart/Pub related
+# ----------------------
+# Flutter / Dart
+# ----------------------
 **/doc/api/
-**/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
-/coverage/
 
-# Symbolication related
-app.*.symbols
+# ----------------------
+# Android
+# ----------------------
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/android/.gradle
+**/android/local.properties
+**/android/key.properties
+**/android/*.jks
+**/android/*.keystore
 
-# Obfuscation related
-app.*.map.json
+# SECRETO: Configuración de Firebase Android
+android/app/google-services.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ----------------------
+# iOS / macOS
+# ----------------------
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Podfile.lock
+**/ios/Profile/Prov*
+**/ios/Base.lproj/Main.storyboardc
+
+# SECRETO: Configuración de Firebase iOS/macOS
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+
+# ----------------------
+# macOS specific
+# ----------------------
+**/macos/Flutter/ephemeral/
+
+# ----------------------
+# Web
+# ----------------------
+lib/generated_plugin_registrant.dart
+
+# ----------------------
+# Firebase & Secrets (General)
+# ----------------------
+# SECRETO: Configuración generada por FlutterFire CLI
+lib/firebase_options.dart
+
+# Variables de entorno
+.env
+.env.*
+!.env.example

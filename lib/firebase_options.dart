@@ -46,6 +46,7 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // Automaticamente configura Firebase para web, android y iOS
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyCFSSEKT-ZYg5kYPlwBwiWh8q3UZsEIcec',
     appId: '1:1029109934862:web:753b80ae38618719c5c55f',
