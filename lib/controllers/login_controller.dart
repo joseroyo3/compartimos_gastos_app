@@ -62,7 +62,6 @@ class LoginController {
     await _auth.currentUser?.updatePassword(newPassword);
   }
 
-
   // VERIFICACION POR EMAIL EN CASO DE OLVIDO
   Future<void> sendEmailVerification() async {
     await _auth.currentUser?.sendEmailVerification();
@@ -107,7 +106,8 @@ class LoginController {
         email: email,
         password: password,
       );
-      final userCredential = await _auth.currentUser?.linkWithCredential(credential);
+      final userCredential =
+          await _auth.currentUser?.linkWithCredential(credential);
       final user = userCredential?.user;
 
       if (user != null) {

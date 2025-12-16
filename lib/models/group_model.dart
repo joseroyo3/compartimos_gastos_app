@@ -4,9 +4,11 @@ class GroupModel {
   final String id;
   final String nombre;
   final String creadoPor; // ID del usuario que creó el grupo
-  final int color; // Cambiado de string a int para elegir el color predetermiado de la lista
+  final int
+      color; // Cambiado de string a int para elegir el color predetermiado de la lista
   final Timestamp fechaCreacion;
-  final List<String> miembros; // Lista de UIDs de los participantes
+  final Map<String, String>
+      miembros; // tambien debe ser Map, debo guardar nombre y uid
 
   GroupModel({
     required this.id,
@@ -27,8 +29,9 @@ class GroupModel {
       nombre: data['nombre'] ?? 'Sin Nombre',
       creadoPor: data['creadoPor'] ?? '',
       color: data['color'] ?? '0',
-      fechaCreacion: Timestamp.now(), //fecha actual de base
-      miembros: List<String>.from(data['miembros'] ?? []),
+      fechaCreacion:
+          data['fechaCreacion'] ?? Timestamp.now(), // guardada, no actual
+      miembros: Map<String, String>.from(data['miembros'] ?? {}),
     );
   }
 
@@ -51,7 +54,7 @@ class GroupModel {
     String? creadoPor,
     int? color,
     Timestamp? fechaCreacion,
-    List<String>? miembros,
+    Map<String, String>? miembros,
   }) {
     return GroupModel(
       id: id ?? this.id,

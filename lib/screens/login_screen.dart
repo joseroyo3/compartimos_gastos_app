@@ -3,7 +3,6 @@ import 'package:compartimos_gastos/widgets/login_screen/auth_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/login_controller.dart';
-import '../controllers/main_navigator_controller.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -90,19 +89,15 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 const LogoWidget(),
-
                 TextFormField(
                   controller: _emailCtrl,
                   decoration: const InputDecoration(
                     labelText: "Email",
                     prefixIcon: Icon(Icons.email),
                   ),
-
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
-
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _passCtrl,
                   obscureText: true,
@@ -112,7 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
-
                 Row(
                   children: [
                     Checkbox(
@@ -122,9 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text('Recordar usuario'),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 if (_isLoading)
                   const CircularProgressIndicator()
                 else ...[

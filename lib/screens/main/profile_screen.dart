@@ -33,9 +33,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // recargar el usuario y refrescar la pantalla
   Future<void> _refreshUser() async {
     await user?.reload();
-    setState(() {
-      user = FirebaseAuth.instance.currentUser;
-    });
+    if (mounted) {
+      setState(() {
+        user = FirebaseAuth.instance.currentUser;
+      });
+    }
   }
 
   @override
@@ -52,20 +54,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 const Icon(Icons.no_accounts, size: 80, color: Colors.grey),
                 const SizedBox(height: 20),
-
                 const Text(
                   "Has entrado como invitado",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-
                 const Text(
                   "Si cierras sesión o pierdes tu dispositivo, perderás tus datos. Regístrate para guardarlos.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize:16, color: Colors.grey),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 20),
-
                 ProfileActionButton(
                   icon: Icons.save_as,
                   text: 'Registrarse',
@@ -141,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildUserInfoCard() {
     return Card(
-      elevation: 4,// sombreado
+      elevation: 4, // sombreado
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -153,19 +152,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Icon(Icons.person, size: 40, color: Colors.white),
             ),
             const SizedBox(height: 10),
-
             Text(
               user?.displayName ?? 'Actualiza perfil e introduce nombre.',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-
             Text(
               user?.email ?? 'Sin Email',
               style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
             const SizedBox(height: 5),
-
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(

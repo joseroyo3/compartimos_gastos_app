@@ -2,13 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../controllers/login_controller.dart';
 
-
 // Clase que usaremos solo para los dialogs de login screen
 abstract class AuthDialogs {
   static void showForgotPass(
     BuildContext context,
     TextEditingController
-    emailCtrl, // Reutilizamos el controller para que el usuario no reescriba su email
+        emailCtrl, // Reutilizamos el controller para que el usuario no reescriba su email
     LoginController controller,
   ) {
     showDialog(
@@ -17,7 +16,8 @@ abstract class AuthDialogs {
         title: const Text('Recuperar contraseña'),
         content: TextField(
           controller: emailCtrl,
-          keyboardType: TextInputType.emailAddress, // teclado estandar pero comprobando @ y .
+          keyboardType: TextInputType
+              .emailAddress, // teclado estandar pero comprobando @ y .
           decoration: const InputDecoration(labelText: 'Tu email'),
         ),
         actions: [
@@ -93,7 +93,9 @@ abstract class AuthDialogs {
               if (usuario != null) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Registrado con éxito. Verifica tu email.')),
+                    const SnackBar(
+                        content:
+                            Text('Registrado con éxito. Verifica tu email.')),
                   );
                 }
               } else {

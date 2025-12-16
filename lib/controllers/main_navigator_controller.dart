@@ -1,6 +1,7 @@
-import 'package:compartimos_gastos/screens/main/group_screen.dart';
 import 'package:compartimos_gastos/screens/main/profile_screen.dart';
 import 'package:flutter/material.dart';
+
+import '../screens/main/home_screen.dart';
 
 class MainNavigationController extends StatefulWidget {
   const MainNavigationController({super.key});
@@ -21,7 +22,7 @@ class _MainNavigationControllerState extends State<MainNavigationController> {
   void initState() {
     super.initState();
     // El orden de esta lista debe coincidir estrictamente con el de los BottomNavigationBarItem
-    _pages = [const GroupScreen(), const ProfileScreen()];
+    _pages = [const HomeScreen(), const ProfileScreen()];
   }
 
   void _onItemTapped(int index) {

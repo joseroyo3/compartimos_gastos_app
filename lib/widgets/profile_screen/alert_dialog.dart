@@ -35,10 +35,10 @@ class CustomInputDialog extends StatelessWidget {
           onPressed: isLoading ? null : onConfirm,
           child: isLoading
               ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : Text(confirmText),
         ),
       ],
