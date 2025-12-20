@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SimpleGroupScreen(colorGrupo: colorGrupo),
+                        builder: (context) => GroupScreen(colorGrupo: colorGrupo),
                       ),
                     );
                   },

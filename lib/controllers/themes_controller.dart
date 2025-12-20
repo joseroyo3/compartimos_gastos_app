@@ -1,57 +1,60 @@
 import 'package:flutter/material.dart';
 
-// Encargado de controlar el tema principal de la app
 class ThemeController {
-  // Especifico el verde del logo como color principal
+  // Color principal (Verde)
   static const Color primaryColor = Color(0xFF30CBA1);
 
-  //LISTA DE COLORES DISPONIBLES PARA GRUPOS
+  // LISTA DE COLORES
   static final List<Map<String, dynamic>> groupColors = [
-    {'color': Colors.blue, 'name': 'Azul'}, //1
-    {'color': Colors.red, 'name': 'Rojo'}, //2
-    {'color': Colors.green, 'name': 'Verde'}, //3
-    {'color': Colors.orange, 'name': 'Naranja'}, //4
-    {'color': Colors.purple, 'name': 'Morado'}, //5
-    {'color': Colors.teal, 'name': 'Verde azulado'}, //6
-    {'color': Colors.pink, 'name': 'Rosa'}, //7
-    {'color': Colors.indigo, 'name': 'Índigo'}, //8
-    {'color': Colors.amber, 'name': 'Ámbar'}, //9
-    {'color': Colors.cyan, 'name': 'Cian'}, //10
-    {'color': Colors.deepOrange, 'name': 'Naranja oscuro'}, //11
-    {'color': Colors.lightBlue, 'name': 'Azul claro'}, //12
+    {'color': Colors.blue, 'name': 'Azul'},
+    {'color': Colors.red, 'name': 'Rojo'},
+    {'color': Colors.green, 'name': 'Verde'},
+    {'color': Colors.orange, 'name': 'Naranja'},
+    {'color': Colors.purple, 'name': 'Morado'},
+    {'color': Colors.teal, 'name': 'Verde azulado'},
+    {'color': Colors.pink, 'name': 'Rosa'},
+    {'color': Colors.indigo, 'name': 'Índigo'},
+    {'color': Colors.amber, 'name': 'Ámbar'},
+    {'color': Colors.cyan, 'name': 'Cian'},
+    {'color': Colors.deepOrange, 'name': 'Naranja oscuro'},
+    {'color': Colors.lightBlue, 'name': 'Azul claro'},
   ];
 
-  // Creamos el Tema Global
-  static final ThemeData tema = ThemeData(
-    useMaterial3: true,
+  // Esto crea un tema completo basándose en CUALQUIER color que le pases
+  static ThemeData crearTema(Color colorBase) {
+    return ThemeData(
+      useMaterial3: true,
 
-    // definimos la paleta principal en verde
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryColor,
-      primary: primaryColor,
-    ),
-
-    // --- BARRA SUPERIOR (APPBAR) ---
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryColor, // Fondo Verde
-      foregroundColor: Colors.white, // Texto Blanco
-      centerTitle: true,
-      elevation: 0,
-    ),
-
-    // --- BOTONES (ELEVATED BUTTON) ---
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryColor, // Fondo Verde
-        foregroundColor: Colors.white, // Texto Blanco
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      // La paleta basada en el color recibido
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: colorBase,
+        primary: colorBase,
       ),
-    ),
 
-    // --- BOTÓN FLOTANTE ---
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: primaryColor,
-      foregroundColor: Colors.white,
-    ),
-  );
+      // Estilo del AppBar (igual que tu original)
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorBase,
+        foregroundColor: Colors.white,
+        centerTitle: true,
+        elevation: 0,
+      ),
+
+      // Estilo de los Botones (igual que tu original)
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colorBase,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+
+      // Estilo del Botón Flotante
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: colorBase,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  static final ThemeData tema = crearTema(primaryColor);
 }
