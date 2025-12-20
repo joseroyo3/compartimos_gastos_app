@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../controllers/group_controller.dart';
-import '../../models/group_model.dart'; // Asegúrate de importar tu modelo
+import '../../models/group_model.dart';
 import '../../widgets/appbar_custom.dart';
 import '../../widgets/group_screen/floating_button.dart';
 import 'group_screens/group_screen.dart';
@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => GroupScreen(colorGrupo: colorGrupo),
+                        builder: (context) => GroupScreen(groupModel: grupo),
                       ),
                     );
                   },
