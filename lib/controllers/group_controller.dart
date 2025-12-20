@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/group_model.dart';
 
 class GroupController {
@@ -28,5 +29,20 @@ class GroupController {
     Map<String, dynamic> datosAActualizar,
   ) async {
     await firestore.collection('grupos').doc(groupId).update(datosAActualizar);
+  }
+
+  Stream<List<GroupModel>> obtenerGruposStream() {
+    // TODOS los grupos por UID
+    String? uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) return const Stream.empty(); // Por seguridad si no hay login
+
+    return firestore
+        .collection('grupos')
+        .where('creadoPor', isEqualTo: uid)
+        .snapshots()
+        .map((snapshot) =>
+        snapshot.docs.map((doc) => GroupModel.fromFirestore(doc)).toList()
+    );
   }
 }

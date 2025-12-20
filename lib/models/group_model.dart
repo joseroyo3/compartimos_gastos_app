@@ -18,7 +18,7 @@ class GroupModel {
     required this.fechaCreacion,
     required this.miembros,
   });
-
+  int get colorValue => color;
   // DESDE FIRESTORE DATABASE (Cuando LEES un grupo)
   factory GroupModel.fromFirestore(DocumentSnapshot doc) {
     // Convertimos la data del documento a un Mapa seguro
@@ -28,7 +28,7 @@ class GroupModel {
       id: doc.id, // El ID del documento es el ID del grupo
       nombre: data['nombre'] ?? 'Sin Nombre',
       creadoPor: data['creadoPor'] ?? '',
-      color: data['color'] ?? '0',
+      color: data['color'] ?? 4280391411,
       fechaCreacion:
           data['fechaCreacion'] ?? Timestamp.now(), // guardada, no actual
       miembros: Map<String, String>.from(data['miembros'] ?? {}),

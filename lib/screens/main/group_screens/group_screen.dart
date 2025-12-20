@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../widgets/appbar_custom.dart';
 
 class SimpleGroupScreen extends StatelessWidget {
-  const SimpleGroupScreen({super.key});
+
+  final Color colorGrupo;
+  const SimpleGroupScreen({super.key, required this.colorGrupo});
 
   @override
   Widget build(BuildContext context) {

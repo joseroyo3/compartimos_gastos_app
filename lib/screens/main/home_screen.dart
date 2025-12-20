@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-
-import '../../controllers/themes_controller.dart';
+import '../../controllers/group_controller.dart';
+import '../../models/group_model.dart'; // Asegúrate de importar tu modelo
 import '../../widgets/appbar_custom.dart';
-import '../../widgets/group_screen/color_dropdown_widget.dart';
 import '../../widgets/group_screen/floating_button.dart';
 import 'group_screens/group_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  //Stateful porque ahora es dinámica
   const HomeScreen({super.key});
 
   @override
@@ -15,55 +13,66 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Color _selectedColor = ThemeController.groupColors[0]['color'];
+  final GroupController _groupController = GroupController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Grupos'),
-
+      appBar: CustomAppBar(title: 'Mis Grupos'),
       floatingActionButton: const FloattingButton(),
-      // El cuerpo de la página
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Centra verticalmente
-          children: [
-            // Texto
-            const Text(
-              'Aquí se mostrarán los grupos',
-              style: TextStyle(fontSize: 30),
-            ),
 
-            ColorDropdownWidget(
-              selectedColor: _selectedColor,
-              onColorChanged: (newColor) {
-                // Actualizamos el estado del HomeScreen
-                setState(() {
-                  _selectedColor = newColor;
-                });
-              },
-            ),
+      body: StreamBuilder<List<GroupModel>>(
+        stream: _groupController.obtenerGruposStream(),
+        builder: (context, snapshot) {
+          // CARGAMOS
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            const SizedBox(height: 20),
+          //NO GRUPOS
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No tienes grupos todavía'));
+          }
 
-            ElevatedButton(
-              onPressed: () {
-                // NAVEGACIÓN A SIMPLE GROUP SCREEN
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SimpleGroupScreen(),
+          var grupos = snapshot.data!;
+
+          // GRUPOSTOTALES
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: grupos.length,
+            itemBuilder: (context, index) {
+              final grupo = grupos[index];
+
+              Color colorGrupo = Color(grupo.colorValue);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 15),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorGrupo, // El color del grupos
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _selectedColor,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Botón de prueba'),
-            ),
-          ],
-        ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SimpleGroupScreen(colorGrupo: colorGrupo),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    grupo.nombre,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
