@@ -98,6 +98,9 @@ class GroupScreen extends StatelessWidget {
                           "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}";
 
                       return ListTile(
+                        onLongPress: () { // si presionamos largo borramos
+                          _mostrarDialogoBorrar(context, pago);
+                        },
                         leading: CircleAvatar(
                           backgroundColor: colorGrupo,
                           child: const Icon(Icons.shopping_bag,
@@ -150,5 +153,46 @@ class GroupScreen extends StatelessWidget {
       return groupModel.miembros[uid]!;
     }
     return "Usuario";
+  }
+
+  void _mostrarDialogoBorrar(BuildContext context, PayModel pago) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar gasto'),
+        content: Text('¿Seguro que quieres borrar "${pago.descripcion}" de ${pago.cantidad.toStringAsFixed(2)}€?\n\nSe recalcularán las deudas automáticamente.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              // Cerrar diálogo
+              Navigator.pop(context);
+
+              // Llamar al controlador para borrar
+              try {
+                await _paymentController.eliminarPago(groupModel.id, pago);
+
+                // Configrmacion
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Gasto eliminado y balances actualizados')),
+                  );
+                }
+              } catch (e) {
+                print("Error borrando: $e");
+              }
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
   }
 }
