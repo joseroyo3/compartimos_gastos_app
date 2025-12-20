@@ -29,12 +29,7 @@ class PayController {
 
         // Llamamos a la lógica de actualizar deuda
         await _actualizarBalanceTransaccional(
-            transaction,
-            groupRef,
-            deudorId,
-            acreedorId,
-            cantidadQueDebe
-        );
+            transaction, groupRef, deudorId, acreedorId, cantidadQueDebe);
       }
     });
   }
@@ -42,12 +37,12 @@ class PayController {
   // LÓGICA DE ACTUALIZACIÓN DE BALANCE
   // Esta función comprueba si ya existía deuda entre las dos personas
   Future<void> _actualizarBalanceTransaccional(
-      Transaction transaction,
-      DocumentReference groupRef,
-      String deudorId, // El que debe
-      String acreedorId, // Al que le deben
-      double monto, // 20€
-      ) async {
+    Transaction transaction,
+    DocumentReference groupRef,
+    String deudorId, // El que debe
+    String acreedorId, // Al que le deben
+    double monto, // 20€
+  ) async {
     final balancesRef = groupRef.collection('balances');
 
     // Si ya existe un documento de deuda
@@ -59,7 +54,8 @@ class PayController {
     if (queryDirecta.docs.isNotEmpty) {
       //Simplemente SUMAMOS la deuda----------------------
       DocumentReference docRef = queryDirecta.docs.first.reference;
-      double deudaActual = (queryDirecta.docs.first.data()['cantidad'] as num).toDouble();
+      double deudaActual =
+          (queryDirecta.docs.first.data()['cantidad'] as num).toDouble();
       transaction.update(docRef, {'cantidad': deudaActual + monto});
       return;
     }
@@ -72,7 +68,8 @@ class PayController {
 
     if (queryInversa.docs.isNotEmpty) {
       DocumentReference docRef = queryInversa.docs.first.reference;
-      double deudaExistente = (queryInversa.docs.first.data()['cantidad'] as num).toDouble();
+      double deudaExistente =
+          (queryInversa.docs.first.data()['cantidad'] as num).toDouble();
 
       double nuevoBalance = deudaExistente - monto;
 
@@ -117,9 +114,7 @@ class PayController {
         .orderBy('fecha', descending: true) // Los más recientes primero
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => PayModel.fromFirestore(doc))
-          .toList();
+      return snapshot.docs.map((doc) => PayModel.fromFirestore(doc)).toList();
     });
   }
 
@@ -137,7 +132,8 @@ class PayController {
     });
   }
 
-  Map<String, double> calcularDistribucion(double total, List<String> participantesIds) {
+  Map<String, double> calcularDistribucion(
+      double total, List<String> participantesIds) {
     if (participantesIds.isEmpty) return {};
 
     int n = participantesIds.length;

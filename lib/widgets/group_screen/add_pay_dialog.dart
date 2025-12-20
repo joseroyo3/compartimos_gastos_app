@@ -30,7 +30,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   void initState() {
     super.initState();
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUid != null && widget.groupModel.miembros.containsKey(currentUid)) {
+    if (currentUid != null &&
+        widget.groupModel.miembros.containsKey(currentUid)) {
       _idPagadorSeleccionado = currentUid;
     } else {
       _idPagadorSeleccionado = widget.groupModel.miembros.keys.first;
@@ -55,20 +56,27 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                 // CANTIDAD -----------
                 TextFormField(
                   controller: _cantidadController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorGrupo),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: colorGrupo),
                   textAlign: TextAlign.center,
                   decoration: const InputDecoration(
                     hintText: '0.00 €',
                     border: InputBorder.none,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+([.,]\d{0,2})?')),
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+([.,]\d{0,2})?')),
                   ],
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Introduce cantidad';
+                    if (value == null || value.isEmpty)
+                      return 'Introduce cantidad';
                     String cleanValue = value.replaceAll(',', '.');
-                    if (double.tryParse(cleanValue) == null || double.parse(cleanValue) <= 0) {
+                    if (double.tryParse(cleanValue) == null ||
+                        double.parse(cleanValue) <= 0) {
                       return 'Mayor que 0';
                     }
                     return null;
@@ -83,7 +91,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                   decoration: InputDecoration(
                     labelText: 'Concepto (Cena, Taxi...)',
                     prefixIcon: const Icon(Icons.description_outlined),
-                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorGrupo)),
+                    focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: colorGrupo)),
                     floatingLabelStyle: TextStyle(color: colorGrupo),
                   ),
                   textCapitalization: TextCapitalization.sentences,
@@ -118,7 +127,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                 // PARA QUIÉN -------------------------------------------
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text("Para quiénes:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text("Para quiénes:",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 5),
 
@@ -155,7 +165,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                   ),
                 ),
 
-                if (_idsInvolucrados.length == 1 && _idsInvolucrados.contains(_idPagadorSeleccionado))
+                if (_idsInvolucrados.length == 1 &&
+                    _idsInvolucrados.contains(_idPagadorSeleccionado))
                   const Padding(
                     padding: EdgeInsets.only(top: 8.0),
                     child: Text(
@@ -180,7 +191,11 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
             foregroundColor: Colors.white,
           ),
           child: _estaGuardando
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
               : const Text('Guardar'),
         ),
       ],
@@ -194,10 +209,12 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
     setState(() => _estaGuardando = true);
 
     try {
-      final double cantidad = double.parse(_cantidadController.text.replaceAll(',', '.'));
+      final double cantidad =
+          double.parse(_cantidadController.text.replaceAll(',', '.'));
       final controller = PayController();
 
-      final mapDistribucion = controller.calcularDistribucion(cantidad, _idsInvolucrados);
+      final mapDistribucion =
+          controller.calcularDistribucion(cantidad, _idsInvolucrados);
 
       final nuevoPago = PayModel(
         id: '',

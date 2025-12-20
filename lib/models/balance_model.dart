@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BalanceModel {
   final String id;
-  final String deudorId;//  debe dinero
-  final String acreedorId;//  le deben dinero
+  final String deudorId; //  debe dinero
+  final String acreedorId; //  le deben dinero
   final double cantidad;
 
   BalanceModel({

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../controllers/group_controller.dart';
+import '../../controllers/gruop_navigator_controller.dart';
 import '../../models/group_model.dart';
 import '../../widgets/appbar_custom.dart';
 import '../../widgets/group_screen/floating_button.dart';
-import 'group_screens/group_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: CustomAppBar(title: 'Mis Grupos'),
       floatingActionButton: const FloattingButton(),
-
       body: StreamBuilder<List<GroupModel>>(
         stream: _groupController.obtenerGruposStream(),
         builder: (context, snapshot) {
@@ -51,7 +50,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorGrupo, // El color del grupos
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 15, horizontal: 20),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -60,7 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => GroupScreen(groupModel: grupo),
+                        builder: (context) =>
+                            GroupNavigatorScreen(groupModel: grupo),
                       ),
                     );
                   },

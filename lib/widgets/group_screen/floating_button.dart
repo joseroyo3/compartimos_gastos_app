@@ -13,7 +13,8 @@ class FloattingButton extends StatelessWidget {
   void _mostrarDialogoCrearGrupo(BuildContext context) {
     // Controladores CREAR
     final TextEditingController nombreGrupoController = TextEditingController();
-    final TextEditingController nombreInvitadoController = TextEditingController();
+    final TextEditingController nombreInvitadoController =
+        TextEditingController();
 
     // Controladores UNIRSE
     final TextEditingController codigoGrupoController = TextEditingController();
@@ -46,7 +47,8 @@ class FloattingButton extends StatelessWidget {
               title: Container(
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: Row(
                   children: [
@@ -54,12 +56,15 @@ class FloattingButton extends StatelessWidget {
                     Expanded(
                       child: InkWell(
                         onTap: () => setStateDialog(() => esModoCrear = true),
-                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(28)),
+                        borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(28)),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           decoration: BoxDecoration(
                             border: esModoCrear
-                                ? Border(bottom: BorderSide(color: primaryColor, width: 3))
+                                ? Border(
+                                    bottom: BorderSide(
+                                        color: primaryColor, width: 3))
                                 : null,
                           ),
                           child: Text(
@@ -67,7 +72,9 @@ class FloattingButton extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: esModoCrear ? primaryColor : Colors.grey,
-                              fontWeight: esModoCrear ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: esModoCrear
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
@@ -78,12 +85,15 @@ class FloattingButton extends StatelessWidget {
                     Expanded(
                       child: InkWell(
                         onTap: () => setStateDialog(() => esModoCrear = false),
-                        borderRadius: const BorderRadius.only(topRight: Radius.circular(28)),
+                        borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(28)),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           decoration: BoxDecoration(
                             border: !esModoCrear
-                                ? Border(bottom: BorderSide(color: primaryColor, width: 3))
+                                ? Border(
+                                    bottom: BorderSide(
+                                        color: primaryColor, width: 3))
                                 : null,
                           ),
                           child: Text(
@@ -91,7 +101,9 @@ class FloattingButton extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: !esModoCrear ? primaryColor : Colors.grey,
-                              fontWeight: !esModoCrear ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: !esModoCrear
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
@@ -132,7 +144,8 @@ class FloattingButton extends StatelessWidget {
                                 value: item['color'],
                                 child: Row(
                                   children: [
-                                    Icon(Icons.circle, color: item['color'], size: 16),
+                                    Icon(Icons.circle,
+                                        color: item['color'], size: 16),
                                     const SizedBox(width: 10),
                                     Text(item['name']),
                                   ],
@@ -152,7 +165,8 @@ class FloattingButton extends StatelessWidget {
 
                       const Align(
                         alignment: Alignment.centerLeft,
-                        child: Text("Miembros:", style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: Text("Miembros:",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(height: 10),
 
@@ -165,19 +179,24 @@ class FloattingButton extends StatelessWidget {
                               textCapitalization: TextCapitalization.words,
                               decoration: const InputDecoration(
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 10),
                                 border: OutlineInputBorder(),
                               ),
                             ),
                           ),
                           const SizedBox(width: 10),
                           IconButton(
-                            style: IconButton.styleFrom(backgroundColor: primaryColor),
+                            style: IconButton.styleFrom(
+                                backgroundColor: primaryColor),
                             icon: const Icon(Icons.add, color: Colors.white),
                             onPressed: () {
-                              if (nombreInvitadoController.text.trim().isNotEmpty) {
+                              if (nombreInvitadoController.text
+                                  .trim()
+                                  .isNotEmpty) {
                                 setStateDialog(() {
-                                  listaInvitados.add(nombreInvitadoController.text.trim());
+                                  listaInvitados.add(
+                                      nombreInvitadoController.text.trim());
                                   nombreInvitadoController.clear();
                                 });
                               }
@@ -192,7 +211,8 @@ class FloattingButton extends StatelessWidget {
                           children: listaInvitados.asMap().entries.map((entry) {
                             return Chip(
                               label: Text(entry.value),
-                              onDeleted: () => setStateDialog(() => listaInvitados.removeAt(entry.key)),
+                              onDeleted: () => setStateDialog(
+                                  () => listaInvitados.removeAt(entry.key)),
                             );
                           }).toList(),
                         ),
@@ -204,7 +224,8 @@ class FloattingButton extends StatelessWidget {
                       const SizedBox(height: 20),
                       const Text(
                         "Introduce el Código del Grupo",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       TextField(
@@ -215,7 +236,8 @@ class FloattingButton extends StatelessWidget {
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.paste),
                             onPressed: () async {
-                              final data = await Clipboard.getData(Clipboard.kTextPlain);
+                              final data =
+                                  await Clipboard.getData(Clipboard.kTextPlain);
                               if (data?.text != null) {
                                 codigoGrupoController.text = data!.text!;
                               }
@@ -240,66 +262,74 @@ class FloattingButton extends StatelessWidget {
                     foregroundColor: Colors.white,
                   ),
                   // Si está guardando, deshabilitamos el botón
-                  onPressed: estaGuardando ? null : () async {
+                  onPressed: estaGuardando
+                      ? null
+                      : () async {
+                          // Mostrar carga
+                          setStateDialog(() => estaGuardando = true);
 
-                    // Mostrar carga
-                    setStateDialog(() => estaGuardando = true);
+                          try {
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user == null) return;
 
-                    try {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user == null) return;
+                            if (esModoCrear) {
+                              // LÓGICA DE CREAR GRUPO
+                              if (nombreGrupoController.text.trim().isEmpty) {
+                                setStateDialog(() => estaGuardando = false);
+                                return;
+                              }
 
-                      if (esModoCrear) {
-                        // LÓGICA DE CREAR GRUPO
-                        if (nombreGrupoController.text.trim().isEmpty) {
-                          setStateDialog(() => estaGuardando = false);
-                          return;
-                        }
+                              // Generamos ID nuevo
+                              String newId = FirebaseFirestore.instance
+                                  .collection('grupos')
+                                  .doc()
+                                  .id;
 
-                        // Generamos ID nuevo
-                        String newId = FirebaseFirestore.instance.collection('grupos').doc().id;
+                              // Mapa de miembros, yo e invitados
+                              Map<String, String> mapaMiembros = {
+                                user.uid: user.displayName ?? 'Yo',
+                              };
 
-                        // Mapa de miembros, yo e invitados
-                        Map<String, String> mapaMiembros = {
-                          user.uid: user.displayName ?? 'Yo',
-                        };
+                              // Invitados con ID temporal
+                              for (var nombreInvitado in listaInvitados) {
+                                String tempId =
+                                    'invitado_${DateTime.now().microsecondsSinceEpoch}_${listaInvitados.indexOf(nombreInvitado)}';
+                                mapaMiembros[tempId] = nombreInvitado;
+                              }
 
-                        // Invitados con ID temporal
-                        for (var nombreInvitado in listaInvitados) {
-                          String tempId = 'invitado_${DateTime.now().microsecondsSinceEpoch}_${listaInvitados.indexOf(nombreInvitado)}';
-                          mapaMiembros[tempId] = nombreInvitado;
-                        }
+                              // Creamos el objeto
+                              final nuevoGrupo = GroupModel(
+                                id: newId,
+                                nombre: nombreGrupoController.text.trim(),
+                                creadoPor: user.uid,
+                                color: colorDialogo
+                                    .value, //guardamos el valor del color
+                                fechaCreacion: Timestamp.now(),
+                                miembros: mapaMiembros,
+                              );
 
-                        // Creamos el objeto
-                        final nuevoGrupo = GroupModel(
-                          id: newId,
-                          nombre: nombreGrupoController.text.trim(),
-                          creadoPor: user.uid,
-                          color: colorDialogo.value, //guardamos el valor del color
-                          fechaCreacion: Timestamp.now(),
-                          miembros: mapaMiembros,
-                        );
+                              await GroupController().crearGrupo(nuevoGrupo);
 
-                        await GroupController().crearGrupo(nuevoGrupo);
-
-                        // Navegaremos y cerrar
-                        if (context.mounted) {
-                          Navigator.pop(context); // Cerrar diálogo
-                        }
-
-                      } else {
-                        // LÓGICA DE UNIRSE (ToDo)
-                        print("Por implementar");
-                        Navigator.pop(context);
-                      }
-
-                    } catch (e) {
-                      print("Error creando grupo: $e");
-                      setStateDialog(() => estaGuardando = false);
-                    }
-                  },
+                              // Navegaremos y cerrar
+                              if (context.mounted) {
+                                Navigator.pop(context); // Cerrar diálogo
+                              }
+                            } else {
+                              // LÓGICA DE UNIRSE (ToDo)
+                              print("Por implementar");
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            print("Error creando grupo: $e");
+                            setStateDialog(() => estaGuardando = false);
+                          }
+                        },
                   child: estaGuardando
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
                       : Text(esModoCrear ? 'Crear Grupo' : 'Unirse'),
                 ),
               ],

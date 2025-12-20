@@ -1,3 +1,4 @@
+import 'package:compartimos_gastos/screens/main/group_screens/settings_group_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../controllers/pay_controller.dart';
 import '../../../controllers/themes_controller.dart';
@@ -21,7 +22,25 @@ class GroupScreen extends StatelessWidget {
     return Theme(
       data: ThemeController.crearTema(colorGrupo),
       child: Scaffold(
-        appBar: CustomAppBar(title: groupModel.nombre),
+        appBar: CustomAppBar(
+          title: groupModel.nombre,
+          showLogout: false,
+          actions: [
+            IconButton( //  introducimos d emanera manual
+              icon: const Icon(Icons.settings),
+              tooltip: 'Ajustes',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        SettingsGroupScreen(groupModel: groupModel),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
 
         //BOTÓN FLOTANTE (AÑADIR GASTO) ------------------------
         floatingActionButton: FloatingActionButton(
@@ -33,7 +52,10 @@ class GroupScreen extends StatelessWidget {
               },
             );
           },
-          child: const Icon(Icons.add, color: Colors.white,),
+          child: const Icon(
+            Icons.add,
+            color: Colors.white,
+          ),
         ),
 
         body: Column(
@@ -53,7 +75,8 @@ class GroupScreen extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long, size: 60, color: Colors.grey[300]),
+                          Icon(Icons.receipt_long,
+                              size: 60, color: Colors.grey[300]),
                           const SizedBox(height: 10),
                           const Text("No hay gastos registrados"),
                         ],
@@ -77,7 +100,8 @@ class GroupScreen extends StatelessWidget {
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: colorGrupo,
-                          child: const Icon(Icons.shopping_bag, color: Colors.white),
+                          child: const Icon(Icons.shopping_bag,
+                              color: Colors.white),
                         ),
                         title: Text(
                           pago.descripcion,
@@ -85,9 +109,9 @@ class GroupScreen extends StatelessWidget {
                         ),
                         subtitle: Text(
                           "Pagado por: ${_obtenerNombre(pago.idPagador)}",
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
-
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
@@ -103,7 +127,8 @@ class GroupScreen extends StatelessWidget {
                             ),
                             Text(
                               fechaFormateada,
-                              style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.grey),
                             ),
                           ],
                         ),

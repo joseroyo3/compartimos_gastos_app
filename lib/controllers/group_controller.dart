@@ -35,14 +35,14 @@ class GroupController {
     // TODOS los grupos por UID
     String? uid = FirebaseAuth.instance.currentUser?.uid;
 
-    if (uid == null) return const Stream.empty(); // Por seguridad si no hay login
+    if (uid == null)
+      return const Stream.empty(); // Por seguridad si no hay login
 
     return firestore
         .collection('grupos')
         .where('creadoPor', isEqualTo: uid)
         .snapshots()
         .map((snapshot) =>
-        snapshot.docs.map((doc) => GroupModel.fromFirestore(doc)).toList()
-    );
+            snapshot.docs.map((doc) => GroupModel.fromFirestore(doc)).toList());
   }
 }
