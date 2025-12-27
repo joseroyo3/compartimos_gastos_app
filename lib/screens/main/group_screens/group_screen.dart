@@ -44,6 +44,7 @@ class GroupScreen extends StatelessWidget {
 
         //BOTÓN FLOTANTE (AÑADIR GASTO) ------------------------
         floatingActionButton: FloatingActionButton(
+          heroTag: "btn_add_gasto",
           onPressed: () {
             showDialog(
               context: context,
