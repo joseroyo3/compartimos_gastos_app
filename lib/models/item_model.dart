@@ -30,7 +30,8 @@ class ItemModel {
   Map<String, dynamic> toMap() {
     return {
       'nombre': nombre,
-      'descripcion': descripcion, // Guardo sin tilde por estándar, pero puedes ponerla
+      'descripcion':
+          descripcion, // Guardo sin tilde por estándar, pero puedes ponerla
       'creadoPor': creadoPor,
       'fechaCreacion': fechaCreacion,
     };

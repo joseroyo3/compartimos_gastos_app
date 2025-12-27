@@ -66,7 +66,8 @@ class BalanceScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle_outline, size: 100, color: color.withOpacity(0.5)),
+          Icon(Icons.check_circle_outline,
+              size: 100, color: color.withOpacity(0.5)),
           const SizedBox(height: 20),
           Text(
             "¡Cuentas saldadas!",
@@ -104,7 +105,8 @@ class BalanceScreen extends StatelessWidget {
                     backgroundColor: Colors.red[100],
                     child: Text(
                       _getInitials(nombreDeudor),
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.red, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -120,7 +122,7 @@ class BalanceScreen extends StatelessWidget {
 
             // FLECHA Y CANTIDAD (Centro)
             Expanded(
-              flex: 2, // Más espacio para el centro
+              flex: 2,
               child: Column(
                 children: [
                   Text(
@@ -132,8 +134,12 @@ class BalanceScreen extends StatelessWidget {
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      Container(height: 2, color: Colors.grey[300], width: double.infinity),
-                      Icon(Icons.arrow_forward, color: Colors.grey[400], size: 16),
+                      Container(
+                          height: 2,
+                          color: Colors.grey[300],
+                          width: double.infinity),
+                      Icon(Icons.arrow_forward,
+                          color: Colors.grey[400], size: 16),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -150,7 +156,7 @@ class BalanceScreen extends StatelessWidget {
               ),
             ),
 
-            // 3. ACREEDOR (Derecha)
+            // ACREEDOR (Derecha)
             Expanded(
               child: Column(
                 children: [
@@ -158,7 +164,8 @@ class BalanceScreen extends StatelessWidget {
                     backgroundColor: Colors.green[100],
                     child: Text(
                       _getInitials(nombreAcreedor),
-                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.green, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(height: 4),

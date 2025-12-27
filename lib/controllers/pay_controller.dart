@@ -37,14 +37,13 @@ class PayController {
   // LÓGICA DE ACTUALIZACIÓN DE BALANCE
   // Esta función comprueba si ya existía deuda entre las dos personas
   Future<void> _actualizarBalanceTransaccional(
-      Transaction transaction,
-      DocumentReference groupRef,
-      String deudorId, // El que debe
-      String acreedorId, // Al que le deben
-      double monto, // 20€ (o negativo si estamos borrando)
-      ) async {
+    Transaction transaction,
+    DocumentReference groupRef,
+    String deudorId, // El que debe
+    String acreedorId, // Al que le deben
+    double monto, // 20€ (o negativo si estamos borrando)
+  ) async {
     final balancesRef = groupRef.collection('balances');
-
 
     // Buscamos si existe deuda en dirección DIRECTA (A debe a B)
     final queryDirecta = await balancesRef
@@ -54,7 +53,8 @@ class PayController {
 
     if (queryDirecta.docs.isNotEmpty) {
       DocumentReference docRef = queryDirecta.docs.first.reference;
-      double deudaActual = (queryDirecta.docs.first.data()['cantidad'] as num).toDouble();
+      double deudaActual =
+          (queryDirecta.docs.first.data()['cantidad'] as num).toDouble();
 
       // Calculamos el nuevo balance
       double nuevoBalance = deudaActual + monto;
@@ -88,7 +88,8 @@ class PayController {
 
     if (queryInversa.docs.isNotEmpty) {
       DocumentReference docRef = queryInversa.docs.first.reference;
-      double deudaExistente = (queryInversa.docs.first.data()['cantidad'] as num).toDouble();
+      double deudaExistente =
+          (queryInversa.docs.first.data()['cantidad'] as num).toDouble();
 
       // Al ser inversa, restamos el monto
       double nuevoBalance = deudaExistente - monto;
@@ -195,14 +196,30 @@ class PayController {
 
         if (deudorId == acreedorId) continue;
 
-        await _actualizarBalanceTransaccional(
-            transaction,
-            groupRef,
-            deudorId,
-            acreedorId,
-            -cantidadQueDebia // INVERTIMOS EL SIGNO
-        );
+        await _actualizarBalanceTransaccional(transaction, groupRef, deudorId,
+            acreedorId, -cantidadQueDebia // INVERTIMOS EL SIGNO
+            );
       }
     });
+  }
+
+  Future<void> borrarTodosLosDatosDelGrupo(String groupId) async {
+    final groupRef = firestore.collection('grupos').doc(groupId);
+    final batch = firestore.batch();
+
+    // Obtener todos los pagos
+    final pagosSnapshot = await groupRef.collection('pagos').get();
+    for (var doc in pagosSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Obtener todos los balances
+    final balancesSnapshot = await groupRef.collection('balances').get();
+    for (var doc in balancesSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Ejecutar to do a la vez
+    await batch.commit();
   }
 }

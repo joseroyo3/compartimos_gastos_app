@@ -16,7 +16,8 @@ class ItemController {
   }
 
   // AGREGAR PRODUCTO
-  Future<void> agregarProducto(String groupId, String nombre, String descripcion) async {
+  Future<void> agregarProducto(
+      String groupId, String nombre, String descripcion) async {
     try {
       final String userId = _auth.currentUser?.uid ?? 'anonimo';
 
@@ -41,9 +42,7 @@ class ItemController {
         .orderBy('fechaCreacion', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ItemModel.fromFirestore(doc))
-          .toList();
+      return snapshot.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
     });
   }
 

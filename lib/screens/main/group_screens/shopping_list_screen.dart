@@ -28,7 +28,6 @@ class ShoppingListScreen extends StatelessWidget {
       body: StreamBuilder<List<ItemModel>>(
         stream: _shoppingController.obtenerLista(groupModel.id),
         builder: (context, snapshot) {
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -39,7 +38,8 @@ class ShoppingListScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_basket_outlined, size: 80, color: Colors.grey[300]),
+                  Icon(Icons.shopping_basket_outlined,
+                      size: 80, color: Colors.grey[300]),
                   const SizedBox(height: 20),
                   Text(
                     "La lista está vacía",
@@ -67,7 +67,8 @@ class ShoppingListScreen extends StatelessWidget {
                   backgroundColor: colorGrupo.withOpacity(0.1),
                   child: Text(
                     item.nombre.substring(0, 1).toUpperCase(),
-                    style: TextStyle(color: colorGrupo, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: colorGrupo, fontWeight: FontWeight.bold),
                   ),
                 ),
                 title: Text(
@@ -76,20 +77,25 @@ class ShoppingListScreen extends StatelessWidget {
                 ),
                 subtitle: Text.rich(
                   TextSpan(
-                    text: item.descripcion.isNotEmpty ? "${item.descripcion}\n" : "",
+                    text: item.descripcion.isNotEmpty
+                        ? "${item.descripcion}\n"
+                        : "",
                     children: [
                       TextSpan(
-                        text: "Añadido por ${_obtenerNombre(item.creadoPor)} el $fechaStr",
+                        text:
+                            "Añadido por ${_obtenerNombre(item.creadoPor)} el $fechaStr",
                         style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                       ),
                     ],
                   ),
                 ),
-                isThreeLine: item.descripcion.isNotEmpty, // Da más espacio si hay descripción
+                isThreeLine: item.descripcion
+                    .isNotEmpty, // Da más espacio si hay descripción
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
                   onPressed: () {
-                    _shoppingController.eliminarProducto(groupModel.id, item.id);
+                    _shoppingController.eliminarProducto(
+                        groupModel.id, item.id);
                   },
                 ),
               );
@@ -99,7 +105,6 @@ class ShoppingListScreen extends StatelessWidget {
       ),
     );
   }
-
 
   // Diálogo para añadir producto
   void _mostrarDialogoAnadir(BuildContext context, Color color) {
@@ -120,7 +125,8 @@ class ShoppingListScreen extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: "Producto",
                 hintText: "Nombre del producto...",
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: color)),
+                focusedBorder:
+                    UnderlineInputBorder(borderSide: BorderSide(color: color)),
                 labelStyle: TextStyle(color: color),
               ),
             ),
@@ -131,7 +137,8 @@ class ShoppingListScreen extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: "Nota (Opcional)",
                 hintText: "Observaciones...",
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: color)),
+                focusedBorder:
+                    UnderlineInputBorder(borderSide: BorderSide(color: color)),
                 labelStyle: TextStyle(color: color),
               ),
             ),

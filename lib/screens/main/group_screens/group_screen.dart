@@ -26,7 +26,8 @@ class GroupScreen extends StatelessWidget {
           title: groupModel.nombre,
           showLogout: false,
           actions: [
-            IconButton( //  introducimos d emanera manual
+            IconButton(
+              //  introducimos d emanera manual
               icon: const Icon(Icons.settings),
               tooltip: 'Ajustes',
               onPressed: () {
@@ -99,7 +100,8 @@ class GroupScreen extends StatelessWidget {
                           "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}";
 
                       return ListTile(
-                        onLongPress: () { // si presionamos largo borramos
+                        onLongPress: () {
+                          // si presionamos largo borramos
                           _mostrarDialogoBorrar(context, pago);
                         },
                         leading: CircleAvatar(
@@ -161,7 +163,8 @@ class GroupScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar gasto'),
-        content: Text('¿Seguro que quieres borrar "${pago.descripcion}" de ${pago.cantidad.toStringAsFixed(2)}€?\n\nSe recalcularán las deudas automáticamente.'),
+        content: Text(
+            '¿Seguro que quieres borrar "${pago.descripcion}" de ${pago.cantidad.toStringAsFixed(2)}€?\n\nSe recalcularán las deudas automáticamente.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -183,7 +186,9 @@ class GroupScreen extends StatelessWidget {
                 // Configrmacion
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Gasto eliminado y balances actualizados')),
+                    const SnackBar(
+                        content:
+                            Text('Gasto eliminado y balances actualizados')),
                   );
                 }
               } catch (e) {
