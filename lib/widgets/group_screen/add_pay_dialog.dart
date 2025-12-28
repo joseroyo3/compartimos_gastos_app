@@ -67,6 +67,12 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     hintText: '0.00 €',
                     border: InputBorder.none,
                   ),
+                  onTap: () { // al apretar al textfield no "desaparecia" la cantidad
+                    _cantidadController.selection = TextSelection(
+                      baseOffset: 0,
+                      extentOffset: _cantidadController.text.length,
+                    );
+                  },
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(
                         RegExp(r'^\d+([.,]\d{0,2})?')),
