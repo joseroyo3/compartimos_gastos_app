@@ -3,7 +3,8 @@ import '../models/pay_model.dart' show PayModel;
 import '../models/balance_model.dart';
 
 class PayController {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  //final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  FirebaseFirestore get firestore => FirebaseFirestore.instance;
 
   // CREAR PAGO Y ACTUALIZAR BALANCES AUTOMÁTICAMENTE
   Future<void> crearPago(String groupId, PayModel pago) async {

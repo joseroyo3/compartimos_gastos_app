@@ -1,8 +1,6 @@
 name: compartimos_gastos
 description: "Compartimos Gastos App"
-
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -11,21 +9,31 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Dependencias que la app USA cuando está funcionando
   firebase_core: ^2.32.0
-  firebase_auth: ^4.16.0 # Autentificacion con FireBase
-  shared_preferences: ^2.2.2 # Guardar datos localmente
-
+  firebase_auth: ^4.16.0
+  shared_preferences: ^2.2.2
   cupertino_icons: ^1.0.8
   cloud_firestore: ^4.17.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^6.0.0
+  # Herramienta de desarrollo
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
   assets:
     - lib/assets/images/logo/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  min_sdk_android: 21
+
+  image_path: "lib/assets/images/logo/logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "lib/assets/images/logo/logo.png"
