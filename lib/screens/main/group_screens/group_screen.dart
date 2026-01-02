@@ -6,6 +6,7 @@ import '../../../models/group_model.dart';
 import '../../../models/pay_model.dart';
 import '../../../widgets/appbar_custom.dart';
 import '../../../widgets/group_screen/add_pay_dialog.dart';
+import '../../../widgets/group_screen/detail_group_dialog.dart';
 
 class GroupScreen extends StatelessWidget {
   // Recibimos el modelo completo del grupo
@@ -100,6 +101,16 @@ class GroupScreen extends StatelessWidget {
                           "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}";
 
                       return ListTile(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => DetailGroupDialog(
+                              pago: pago,
+                              color: colorGrupo,
+                              groupId: groupModel.id,
+                            ),
+                          );
+                        },
                         onLongPress: () {
                           // si presionamos largo borramos
                           _mostrarDialogoBorrar(context, pago);

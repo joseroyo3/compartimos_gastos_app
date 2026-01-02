@@ -85,7 +85,6 @@ macos/Runner/GoogleService-Info.plist
 # ----------------------
 # Web
 # ----------------------
-lib/generated_plugin_registrant.dart
 
 # ----------------------
 # Firebase & Secrets (General)
