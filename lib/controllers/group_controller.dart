@@ -166,4 +166,23 @@ class GroupController {
       'grupos': FieldValue.arrayUnion([groupId])
     });
   }
+
+
+  // ELIMINAR GRUPO -------------------------------------
+  Future<void> eliminarGrupo(String groupId) async {
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    // Referencia al grupo
+    final groupRef = firestore.collection('grupos').doc(groupId);
+
+    // Eliminar el documento del grupo
+    await groupRef.delete();
+
+    // Quitar el grupo del array del usuario, sino seguirá saliendo
+    await firestore.collection('usuarios').doc(user.uid).update({
+      'grupos': FieldValue.arrayRemove([groupId])
+    });
+  }
 }
+

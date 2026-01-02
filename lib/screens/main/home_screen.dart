@@ -65,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
+                  onLongPress: () => _mostrarDialogoEliminar(context, grupo),
                   child: Text(
                     grupo.nombre,
                     style: const TextStyle(fontSize: 18),
@@ -77,4 +78,42 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  // Función para mostrar el aviso de borrar
+  void _mostrarDialogoEliminar(BuildContext context, GroupModel grupo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Eliminar Grupo"),
+        content: Text("¿Seguro que quieres borrar el grupo '${grupo.nombre}'? Esta acción no se puede deshacer."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(), // Cancelar
+            child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                Navigator.of(ctx).pop(); // Cerrar diálogo primero
+                await _groupController.eliminarGrupo(grupo.id);
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Grupo eliminado correctamente"))
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+                  );
+                }
+              }
+            },
+            child: const Text("Eliminar", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
