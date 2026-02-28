@@ -8,71 +8,158 @@ import '../../../widgets/appbar_custom.dart';
 import '../../../widgets/group_screen/add_pay_dialog.dart';
 import '../../../widgets/group_screen/detail_group_dialog.dart';
 
-class GroupScreen extends StatelessWidget {
-  // Recibimos el modelo completo del grupo
+class GroupScreen extends StatefulWidget {
   final GroupModel groupModel;
 
   GroupScreen({super.key, required this.groupModel});
+
+  @override
+  State<GroupScreen> createState() => _GroupScreenState();
+}
+
+class _GroupScreenState extends State<GroupScreen> {
   final PayController _paymentController = PayController();
+
+  // Estado para la selección masiva
+  bool _isSelectionMode = false;
+  final Set<PayModel> _selectedPagos = {};
+
+  void _toggleSelection(PayModel pago) {
+    setState(() {
+      if (_selectedPagos.any((p) => p.id == pago.id)) {
+        _selectedPagos.removeWhere((p) => p.id == pago.id);
+        if (_selectedPagos.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedPagos.add(pago);
+      }
+    });
+  }
+
+  void _enterSelectionMode(PayModel pago) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedPagos.add(pago);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedPagos.clear();
+    });
+  }
+
+  Future<void> _eliminarSeleccionados() async {
+    final count = _selectedPagos.length;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Eliminar gastos"),
+        content: Text(
+            "¿Estás seguro de que quieres eliminar $count gastos seleccionados?\n\nSe recalcularán las deudas."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Eliminar"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _paymentController.eliminarVariosPagos(
+        widget.groupModel.id,
+        _selectedPagos.toList(),
+      );
+      _exitSelectionMode();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text("$count gastos eliminados y balances actualizados")),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Usamos el color del grupo para configurar el tema de esta pantalla
-    final Color colorGrupo = Color(groupModel.colorValue);
+    final Color colorGrupo = Color(widget.groupModel.colorValue);
 
     return Theme(
       data: ThemeController.crearTema(colorGrupo),
       child: Scaffold(
-        appBar: CustomAppBar(
-          title: groupModel.nombre,
-          showLogout: false,
-          actions: [
-            IconButton(
-              //  introducimos d emanera manual
-              icon: const Icon(Icons.settings),
-              tooltip: 'Ajustes',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        SettingsGroupScreen(groupModel: groupModel),
+        appBar: _isSelectionMode
+            ? AppBar(
+                backgroundColor: Colors.red[700],
+                title: Text("${_selectedPagos.length} seleccionados",
+                    style: const TextStyle(color: Colors.white)),
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: _exitSelectionMode,
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.white),
+                    onPressed: _eliminarSeleccionados,
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-
-        //BOTÓN FLOTANTE (AÑADIR GASTO) ------------------------
-        floatingActionButton: FloatingActionButton(
-          heroTag: "btn_add_gasto",
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return AddExpenseDialog(groupModel: groupModel);
-              },
-            );
-          },
-          child: const Icon(
-            Icons.add,
-            color: Colors.white,
-          ),
-        ),
-
+                ],
+              )
+            : CustomAppBar(
+                title: widget.groupModel.nombre,
+                showLogout: false,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    tooltip: 'Ajustes',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SettingsGroupScreen(
+                              groupModel: widget.groupModel),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+        floatingActionButton: _isSelectionMode
+            ? null
+            : FloatingActionButton(
+                heroTag: "btn_add_gasto",
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AddExpenseDialog(groupModel: widget.groupModel);
+                    },
+                  );
+                },
+                child: const Icon(
+                  Icons.add,
+                  color: Colors.white,
+                ),
+              ),
         body: Column(
           children: [
-            // LISTA DE PAGOS (VERTICAL)
             Expanded(
               child: StreamBuilder<List<PayModel>>(
-                stream: _paymentController.obtenerPagosDelGrupo(groupModel.id),
+                stream: _paymentController
+                    .obtenerPagosDelGrupo(widget.groupModel.id),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  // Sin gastos
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return Center(
                       child: Column(
@@ -87,39 +174,52 @@ class GroupScreen extends StatelessWidget {
                     );
                   }
 
-                  // Lista de gastos
                   var pagos = snapshot.data!;
 
                   return ListView.builder(
                     itemCount: pagos.length,
                     itemBuilder: (context, index) {
                       final pago = pagos[index];
+                      final isSelected =
+                          _selectedPagos.any((p) => p.id == pago.id);
 
-                      // Formateo fecha
                       final date = pago.fecha.toDate();
                       String fechaFormateada =
                           "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}";
 
                       return ListTile(
+                        selected: isSelected,
+                        selectedTileColor: colorGrupo.withOpacity(0.05),
                         onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => DetailGroupDialog(
-                              pago: pago,
-                              color: colorGrupo,
-                              groupId: groupModel.id,
-                            ),
-                          );
+                          if (_isSelectionMode) {
+                            _toggleSelection(pago);
+                          } else {
+                            showDialog(
+                              context: context,
+                              builder: (context) => DetailGroupDialog(
+                                pago: pago,
+                                color: colorGrupo,
+                                groupId: widget.groupModel.id,
+                              ),
+                            );
+                          }
                         },
                         onLongPress: () {
-                          // si presionamos largo borramos
-                          _mostrarDialogoBorrar(context, pago);
+                          if (!_isSelectionMode) {
+                            _enterSelectionMode(pago);
+                          }
                         },
-                        leading: CircleAvatar(
-                          backgroundColor: colorGrupo,
-                          child: const Icon(Icons.shopping_bag,
-                              color: Colors.white),
-                        ),
+                        leading: _isSelectionMode
+                            ? Checkbox(
+                                value: isSelected,
+                                activeColor: colorGrupo,
+                                onChanged: (_) => _toggleSelection(pago),
+                              )
+                            : CircleAvatar(
+                                backgroundColor: colorGrupo,
+                                child: const Icon(Icons.shopping_bag,
+                                    color: Colors.white),
+                              ),
                         title: Text(
                           pago.descripcion,
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -129,26 +229,28 @@ class GroupScreen extends StatelessWidget {
                           style:
                               TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              "${pago.cantidad.toStringAsFixed(2)} €",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: colorGrupo,
+                        trailing: _isSelectionMode
+                            ? null
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "${pago.cantidad.toStringAsFixed(2)} €",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: colorGrupo,
+                                    ),
+                                  ),
+                                  Text(
+                                    fechaFormateada,
+                                    style: const TextStyle(
+                                        fontSize: 10, color: Colors.grey),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Text(
-                              fechaFormateada,
-                              style: const TextStyle(
-                                  fontSize: 10, color: Colors.grey),
-                            ),
-                          ],
-                        ),
                       );
                     },
                   );
@@ -161,55 +263,10 @@ class GroupScreen extends StatelessWidget {
     );
   }
 
-  // Función auxiliar para traducir UIDs a Nombres reales
   String _obtenerNombre(String uid) {
-    if (groupModel.miembros.containsKey(uid)) {
-      return groupModel.miembros[uid]!;
+    if (widget.groupModel.miembros.containsKey(uid)) {
+      return widget.groupModel.miembros[uid]!;
     }
     return "Usuario";
-  }
-
-  void _mostrarDialogoBorrar(BuildContext context, PayModel pago) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar gasto'),
-        content: Text(
-            '¿Seguro que quieres borrar "${pago.descripcion}" de ${pago.cantidad.toStringAsFixed(2)}€?\n\nSe recalcularán las deudas automáticamente.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              // Cerrar diálogo
-              Navigator.pop(context);
-
-              // Llamar al controlador para borrar
-              try {
-                await _paymentController.eliminarPago(groupModel.id, pago);
-
-                // Configrmacion
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content:
-                            Text('Gasto eliminado y balances actualizados')),
-                  );
-                }
-              } catch (e) {
-                print("Error borrando: $e");
-              }
-            },
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
   }
 }

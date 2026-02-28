@@ -3,30 +3,122 @@ import '../../../controllers/item_controller.dart';
 import '../../../models/group_model.dart';
 import '../../../models/item_model.dart';
 
-class ShoppingListScreen extends StatelessWidget {
+class ShoppingListScreen extends StatefulWidget {
   final GroupModel groupModel;
 
   ShoppingListScreen({super.key, required this.groupModel});
 
+  @override
+  State<ShoppingListScreen> createState() => _ShoppingListScreenState();
+}
+
+class _ShoppingListScreenState extends State<ShoppingListScreen> {
   // Instanciamos el controlador
   final ItemController _shoppingController = ItemController();
+
+  // Estado para la selección masiva
+  bool _isSelectionMode = false;
+  final Set<String> _selectedItems = {};
+
+  void _toggleSelection(String itemId) {
+    setState(() {
+      if (_selectedItems.contains(itemId)) {
+        _selectedItems.remove(itemId);
+        if (_selectedItems.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedItems.add(itemId);
+      }
+    });
+  }
+
+  void _enterSelectionMode(String itemId) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedItems.add(itemId);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedItems.clear();
+    });
+  }
+
+  Future<void> _eliminarSeleccionados() async {
+    final count = _selectedItems.length;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Eliminar productos"),
+        content: Text(
+            "¿Estás seguro de que quieres eliminar $count productos seleccionados?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Eliminar"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _shoppingController.eliminarVariosProductos(
+        widget.groupModel.id,
+        _selectedItems.toList(),
+      );
+      _exitSelectionMode();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("$count productos eliminados")),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     // Obtenemos el color del grupo para el diseño
-    final Color colorGrupo = Color(groupModel.colorValue);
+    final Color colorGrupo = Color(widget.groupModel.colorValue);
 
     return Scaffold(
-      // Botón para añadir producto
-      floatingActionButton: FloatingActionButton(
-        heroTag: "btn_add_producto",
-        backgroundColor: colorGrupo,
-        onPressed: () => _mostrarDialogoAnadir(context, colorGrupo),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      appBar: _isSelectionMode
+          ? AppBar(
+              backgroundColor: Colors.red[700],
+              title: Text("${_selectedItems.length} seleccionados",
+                  style: const TextStyle(color: Colors.white)),
+              leading: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: _exitSelectionMode,
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.white),
+                  onPressed: _eliminarSeleccionados,
+                ),
+              ],
+            )
+          : null,
+      // Botón para añadir producto (solo si no estamos seleccionando)
+      floatingActionButton: _isSelectionMode
+          ? null
+          : FloatingActionButton(
+              heroTag: "btn_add_producto",
+              backgroundColor: colorGrupo,
+              onPressed: () => _mostrarDialogoAnadir(context, colorGrupo),
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
 
       body: StreamBuilder<List<ItemModel>>(
-        stream: _shoppingController.obtenerLista(groupModel.id),
+        stream: _shoppingController.obtenerLista(widget.groupModel.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -54,25 +146,46 @@ class ShoppingListScreen extends StatelessWidget {
           final lista = snapshot.data!;
 
           return ListView.separated(
-            padding: const EdgeInsets.only(bottom: 80), // Espacio para el FAB
+            padding: EdgeInsets.only(bottom: _isSelectionMode ? 20 : 80),
             itemCount: lista.length,
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final item = lista[index];
+              final isSelected = _selectedItems.contains(item.id);
               final fecha = item.fechaCreacion.toDate();
               final fechaStr = "${fecha.day}/${fecha.month}";
 
               return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: colorGrupo.withOpacity(0.1),
-                  child: Text(
-                    item.nombre.isNotEmpty
-                        ? item.nombre.substring(0, 1).toUpperCase()
-                        : "?",
-                    style: TextStyle(
-                        color: colorGrupo, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                selected: isSelected,
+                selectedTileColor: widget.groupModel.colorValue != null
+                    ? Color(widget.groupModel.colorValue).withOpacity(0.05)
+                    : Colors.grey[100],
+                onTap: () {
+                  if (_isSelectionMode) {
+                    _toggleSelection(item.id);
+                  }
+                },
+                onLongPress: () {
+                  if (!_isSelectionMode) {
+                    _enterSelectionMode(item.id);
+                  }
+                },
+                leading: _isSelectionMode
+                    ? Checkbox(
+                        value: isSelected,
+                        activeColor: colorGrupo,
+                        onChanged: (_) => _toggleSelection(item.id),
+                      )
+                    : CircleAvatar(
+                        backgroundColor: colorGrupo.withOpacity(0.1),
+                        child: Text(
+                          item.nombre.isNotEmpty
+                              ? item.nombre.substring(0, 1).toUpperCase()
+                              : "?",
+                          style: TextStyle(
+                              color: colorGrupo, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                 title: Text(
                   item.nombre,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -91,15 +204,14 @@ class ShoppingListScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                isThreeLine: item.descripcion
-                    .isNotEmpty, // Da más espacio si hay descripción
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () {
-                    _shoppingController.eliminarProducto(
-                        groupModel.id, item.id);
-                  },
-                ),
+                isThreeLine: item.descripcion.isNotEmpty,
+                trailing: _isSelectionMode
+                    ? null
+                    : IconButton(
+                        icon:
+                            const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () => _confirmarBorradoIndividual(item),
+                      ),
               );
             },
           );
@@ -108,27 +220,52 @@ class ShoppingListScreen extends StatelessWidget {
     );
   }
 
+  void _confirmarBorradoIndividual(ItemModel item) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Eliminar producto"),
+        content: Text("¿Quieres eliminar \"${item.nombre}\"?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () {
+              _shoppingController
+                  .eliminarVariosProductos(widget.groupModel.id, [item.id]);
+              Navigator.pop(context);
+            },
+            child: const Text("Eliminar"),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Diálogo para añadir varios productos
   void _mostrarDialogoAnadir(BuildContext context, Color color) {
     showDialog(
       context: context,
-      barrierDismissible: false, // NO se cierra al dar fuera
+      barrierDismissible: false,
       builder: (context) => _BulkAddDialog(
         color: color,
         onSave: (productos) {
           if (productos.isNotEmpty) {
             _shoppingController.agregarVariosProductos(
-                groupModel.id, productos);
+                widget.groupModel.id, productos);
           }
         },
       ),
     );
   }
 
-  // Traduce ID -> Nombre usando los datos locales del grupo
   String _obtenerNombre(String uid) {
-    if (groupModel.miembros.containsKey(uid)) {
-      return groupModel.miembros[uid]!;
+    if (widget.groupModel.miembros.containsKey(uid)) {
+      return widget.groupModel.miembros[uid]!;
     }
     return "Alguien";
   }
@@ -173,7 +310,6 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Formulario para un producto
             TextField(
               controller: _nombreController,
               autofocus: true,
@@ -205,7 +341,6 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
                   style: TextStyle(color: widget.color)),
             ),
             const Divider(),
-            // Lista de productos ya añadidos en el diálogo
             if (_productosTemporales.isNotEmpty)
               Flexible(
                 child: Container(
@@ -258,11 +393,9 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
             foregroundColor: Colors.white,
           ),
           onPressed: () {
-            // Si hay algo en los campos pero no se añadió a la lista temporal, lo añadimos
             if (_nombreController.text.trim().isNotEmpty) {
               _anadirAListaTemporal();
             }
-
             if (_productosTemporales.isNotEmpty) {
               widget.onSave(_productosTemporales);
               Navigator.pop(context);

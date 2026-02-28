@@ -198,10 +198,11 @@ class PayController {
       batch.delete(doc.reference);
     }
 
-    // Resetear netos y balances en el grupo
+    // Resetear netos, balances y lista de compra en el grupo
     batch.update(groupRef, {
       'netos': {},
       'balancesSimplificados': [],
+      'listaCompraCentralizada': [],
     });
 
     await batch.commit();
@@ -222,6 +223,40 @@ class PayController {
 
         pago.distribucion.forEach((uid, cantidad) {
           nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cantidad;
+        });
+      }
+
+      List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
+
+      transaction.update(groupRef, {
+        'netos': nuevosNetos,
+        'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
+      });
+    });
+  }
+
+  // ELIMINAR VARIOS PAGOS DE GOLPE
+  Future<void> eliminarVariosPagos(String groupId, List<PayModel> pagos) async {
+    if (pagos.isEmpty) return;
+
+    final groupRef = firestore.collection('grupos').doc(groupId);
+
+    await firestore.runTransaction((transaction) async {
+      final groupSnap = await transaction.get(groupRef);
+      if (!groupSnap.exists) return;
+
+      final GroupModel group = GroupModel.fromFirestore(groupSnap);
+      Map<String, double> nuevosNetos = Map.from(group.netos);
+
+      for (var pago in pagos) {
+        final pagoRef = groupRef.collection('pagos').doc(pago.id);
+        transaction.delete(pagoRef);
+
+        // Revertir netos
+        nuevosNetos[pago.idPagador] =
+            (nuevosNetos[pago.idPagador] ?? 0) - pago.cantidad;
+        pago.distribucion.forEach((uid, cantidadQueDebia) {
+          nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) + cantidadQueDebia;
         });
       }
 

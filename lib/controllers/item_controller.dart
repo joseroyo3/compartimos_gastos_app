@@ -84,6 +84,36 @@ class ItemController {
     });
   }
 
+  // ELIMINAR VARIOS PRODUCTOS DE GOLPE
+  Future<void> eliminarVariosProductos(
+      String groupId, List<String> productIds) async {
+    if (productIds.isEmpty) return;
+
+    final groupRef = _firestore.collection('grupos').doc(groupId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snap = await transaction.get(groupRef);
+      if (!snap.exists) return;
+
+      final group = GroupModel.fromFirestore(snap);
+      final List<ItemModel> nuevaLista = List.from(group.listaCompra);
+
+      nuevaLista.removeWhere((item) => productIds.contains(item.id));
+
+      transaction.update(groupRef, {
+        'listaCompraCentralizada': nuevaLista
+            .map((i) => {
+                  'id': i.id,
+                  'nombre': i.nombre,
+                  'descripción': i.descripcion,
+                  'creadoPor': i.creadoPor,
+                  'fechaCreacion': i.fechaCreacion,
+                })
+            .toList(),
+      });
+    });
+  }
+
   // AGREGAR VARIOS PRODUCTOS DE GOLPE (OPTIMIZADO: 1 ESCRITURA)
   Future<void> agregarVariosProductos(
       String groupId, List<Map<String, String>> productos) async {
