@@ -12,31 +12,40 @@ class PayController {
     final paymentsRef = groupRef.collection('pagos');
 
     await firestore.runTransaction((transaction) async {
-      // 1. Obtener datos actuales del grupo
       final groupSnap = await transaction.get(groupRef);
       if (!groupSnap.exists) return;
 
       final GroupModel group = GroupModel.fromFirestore(groupSnap);
-      Map<String, double> nuevosNetos = Map.from(group.netos);
 
-      // 2. Guardar el Pago
+      // 1. Guardar el pago primero
       final newPaymentDoc = paymentsRef.doc();
       transaction.set(newPaymentDoc, pago.toMap());
 
-      // 3. ACTUALIZAR NETOS
-      // Al que paga le sumamos el total
+      // 2. Recalcular netos desde cero para asegurar consistencia total
+      // (Es más seguro que acumular sobre el mapa anterior si éste pudiera estar corrupto)
+      final allPaymentsSnap = await groupRef.collection('pagos').get();
+      Map<String, double> nuevosNetos = {};
+
+      // Sumar todos los pagos existentes + el nuevo
+      for (var doc in allPaymentsSnap.docs) {
+        final p = PayModel.fromFirestore(doc);
+        nuevosNetos[p.idPagador] = (nuevosNetos[p.idPagador] ?? 0) + p.cantidad;
+        p.distribucion.forEach((uid, cant) {
+          nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cant;
+        });
+      }
+
+      // Añadir el pago actual que estamos procesando en la transacción
       nuevosNetos[pago.idPagador] =
           (nuevosNetos[pago.idPagador] ?? 0) + pago.cantidad;
-
-      // A cada participante le restamos su parte
-      pago.distribucion.forEach((uid, cantidadQueDebe) {
-        nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cantidadQueDebe;
+      pago.distribucion.forEach((uid, cant) {
+        nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cant;
       });
 
-      // 4. Simplificar deudas a partir de los nuevos netos
+      // 3. Simplificar
       List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
 
-      // 5. Guardar todo en el documento del grupo
+      // 4. Guardar
       transaction.update(groupRef, {
         'netos': nuevosNetos,
         'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
@@ -44,176 +53,67 @@ class PayController {
     });
   }
 
-  // ELIMINAR PAGO Y REVERTIR NETOS
-  Future<void> eliminarPago(String groupId, PayModel pago) async {
-    final groupRef = firestore.collection('grupos').doc(groupId);
-    final pagoRef = groupRef.collection('pagos').doc(pago.id);
-
-    await firestore.runTransaction((transaction) async {
-      // 1. Obtener datos actuales
-      final groupSnap = await transaction.get(groupRef);
-      if (!groupSnap.exists) return;
-
-      final GroupModel group = GroupModel.fromFirestore(groupSnap);
-      Map<String, double> nuevosNetos = Map.from(group.netos);
-
-      // 2. Eliminar el pago
-      transaction.delete(pagoRef);
-
-      // 3. REVERTIR NETOS
-      // Al que pagó le restamos (porque ya no puso ese dinero)
-      nuevosNetos[pago.idPagador] =
-          (nuevosNetos[pago.idPagador] ?? 0) - pago.cantidad;
-
-      // A los participantes les devolvemos su parte (sumamos)
-      pago.distribucion.forEach((uid, cantidadQueDebia) {
-        nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) + cantidadQueDebia;
-      });
-
-      // 4. Recalcular
-      List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
-
-      // 5. Actualizar grupo
-      transaction.update(groupRef, {
-        'netos': nuevosNetos,
-        'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
-      });
-    });
-  }
-
-  // Algoritmo de simplificación puro (sin efectos secundarios de DB)
+  // ALGORITMO DE SIMPLIFICACIÓN (Greedy Matching)
   List<BalanceModel> _calcularSimplificacion(Map<String, double> netos) {
     List<MapEntry<String, double>> deudores = [];
     List<MapEntry<String, double>> acreedores = [];
 
     netos.forEach((uid, amount) {
-      if (amount.abs() < 0.01) return;
-      if (amount < 0) {
-        deudores.add(MapEntry(uid, amount));
+      // Redondeo preventivo a 2 decimales para evitar errores de coma flotante
+      double cleanAmount = double.parse(amount.toStringAsFixed(2));
+      if (cleanAmount.abs() < 0.01) return;
+
+      if (cleanAmount < 0) {
+        deudores.add(MapEntry(uid, cleanAmount.abs()));
       } else {
-        acreedores.add(MapEntry(uid, amount));
+        acreedores.add(MapEntry(uid, cleanAmount));
       }
     });
 
-    deudores.sort((a, b) => a.value.compareTo(b.value));
+    // Ordenar de mayor a menor para minimizar transferencias
+    deudores.sort((a, b) => b.value.compareTo(a.value));
     acreedores.sort((a, b) => b.value.compareTo(a.value));
 
     List<BalanceModel> resultado = [];
-    int i = 0;
-    int j = 0;
+    int i = 0; // puntero deudores
+    int j = 0; // puntero acreedores
 
-    // Copias para no mutar las listas originales durante el matching
-    List<MapEntry<String, double>> d = List.from(deudores);
-    List<MapEntry<String, double>> a = List.from(acreedores);
+    while (i < deudores.length && j < acreedores.length) {
+      double deuda = deudores[i].value;
+      double credito = acreedores[j].value;
 
-    while (i < d.length && j < a.length) {
-      double debit = d[i].value.abs();
-      double credit = a[j].value;
+      double pago = (deuda < credito) ? deuda : credito;
+      pago = double.parse(pago.toStringAsFixed(2));
 
-      double amount = (debit < credit) ? debit : credit;
-      amount = (amount * 100).roundToDouble() / 100;
-
-      if (amount > 0.009) {
+      if (pago > 0) {
         resultado.add(BalanceModel(
           id: '',
-          deudorId: d[i].key,
-          acreedorId: a[j].key,
-          cantidad: amount,
+          deudorId: deudores[i].key,
+          acreedorId: acreedores[j].key,
+          cantidad: pago,
         ));
       }
 
-      double newDebit = debit - amount;
-      double newCredit = credit - amount;
+      // Actualizar remanentes
+      deudores[i] = MapEntry(
+          deudores[i].key, double.parse((deuda - pago).toStringAsFixed(2)));
+      acreedores[j] = MapEntry(
+          acreedores[j].key, double.parse((credito - pago).toStringAsFixed(2)));
 
-      if (newDebit < 0.009) {
-        i++;
-      } else {
-        d[i] = MapEntry(d[i].key, -newDebit);
-      }
-
-      if (newCredit < 0.009) {
-        j++;
-      } else {
-        a[j] = MapEntry(a[j].key, newCredit);
-      }
+      if (deudores[i].value < 0.01) i++;
+      if (acreedores[j].value < 0.01) j++;
     }
     return resultado;
   }
 
-  // LEER PAGOS CON STREAM
-  Stream<List<PayModel>> obtenerPagosDelGrupo(String groupId) {
-    return firestore
-        .collection('grupos')
-        .doc(groupId)
-        .collection('pagos')
-        .orderBy('fecha', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => PayModel.fromFirestore(doc)).toList();
-    });
-  }
-
-  // LEER BALANCES CON STREAM (Ahora lee del documento del grupo)
-  Stream<List<BalanceModel>> obtenerBalancesDelGrupo(String groupId) {
-    return firestore.collection('grupos').doc(groupId).snapshots().map((doc) {
-      if (!doc.exists) return [];
-      return GroupModel.fromFirestore(doc).balances;
-    });
-  }
-
-  Map<String, double> calcularDistribucion(
-      double total, List<String> participantesIds) {
-    if (participantesIds.isEmpty) return {};
-
-    int n = participantesIds.length;
-    double cuotaBase = (total / n * 100).floorToDouble() / 100;
-
-    Map<String, double> distribucion = {};
-    double sumaAcumulada = 0;
-
-    for (var id in participantesIds) {
-      distribucion[id] = cuotaBase;
-      sumaAcumulada += cuotaBase;
-    }
-
-    double diferencia = total - sumaAcumulada;
-    int centimosFaltantes = (diferencia * 100).round();
-
-    for (int i = 0; i < centimosFaltantes; i++) {
-      String idAfortunado = participantesIds[i % n];
-      double nuevoValor = distribucion[idAfortunado]! + 0.01;
-      distribucion[idAfortunado] = double.parse(nuevoValor.toStringAsFixed(2));
-    }
-
-    return distribucion;
-  }
-
-  Future<void> borrarTodosLosDatosDelGrupo(String groupId) async {
-    final groupRef = firestore.collection('grupos').doc(groupId);
-    final batch = firestore.batch();
-
-    // Obtener todos los pagos
-    final pagosSnapshot = await groupRef.collection('pagos').get();
-    for (var doc in pagosSnapshot.docs) {
-      batch.delete(doc.reference);
-    }
-
-    // Resetear netos, balances y lista de compra en el grupo
-    batch.update(groupRef, {
-      'netos': {},
-      'balancesSimplificados': [],
-      'listaCompraCentralizada': [],
-    });
-
-    await batch.commit();
-  }
-
-  // Función para forzar recalcular todo desde cero (útil si hay inconsistencias)
+  // RECALCULAR DESDE CERO (BOTÓN REFRESCAR)
   Future<void> recalcularTodoElGrupo(String groupId) async {
     final groupRef = firestore.collection('grupos').doc(groupId);
 
+    // Primero, obtener todos los pagos fuera de la transacción para evitar bloqueos largos
+    final paymentsSnap = await groupRef.collection('pagos').get();
+
     await firestore.runTransaction((transaction) async {
-      final paymentsSnap = await groupRef.collection('pagos').get();
       Map<String, double> nuevosNetos = {};
 
       for (var doc in paymentsSnap.docs) {
@@ -235,28 +135,28 @@ class PayController {
     });
   }
 
-  // ELIMINAR VARIOS PAGOS DE GOLPE
+  // ELIMINAR VARIOS PAGOS
   Future<void> eliminarVariosPagos(String groupId, List<PayModel> pagos) async {
     if (pagos.isEmpty) return;
-
     final groupRef = firestore.collection('grupos').doc(groupId);
 
     await firestore.runTransaction((transaction) async {
-      final groupSnap = await transaction.get(groupRef);
-      if (!groupSnap.exists) return;
-
-      final GroupModel group = GroupModel.fromFirestore(groupSnap);
-      Map<String, double> nuevosNetos = Map.from(group.netos);
-
       for (var pago in pagos) {
-        final pagoRef = groupRef.collection('pagos').doc(pago.id);
-        transaction.delete(pagoRef);
+        transaction.delete(groupRef.collection('pagos').doc(pago.id));
+      }
 
-        // Revertir netos
-        nuevosNetos[pago.idPagador] =
-            (nuevosNetos[pago.idPagador] ?? 0) - pago.cantidad;
-        pago.distribucion.forEach((uid, cantidadQueDebia) {
-          nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) + cantidadQueDebia;
+      // Forzamos recalculo total tras borrar masivamente
+      final allPaymentsSnap = await groupRef.collection('pagos').get();
+      Map<String, double> nuevosNetos = {};
+
+      for (var doc in allPaymentsSnap.docs) {
+        final p = PayModel.fromFirestore(doc);
+        // Excluir los que estamos borrando en esta transacción
+        if (pagos.any((toDelete) => toDelete.id == p.id)) continue;
+
+        nuevosNetos[p.idPagador] = (nuevosNetos[p.idPagador] ?? 0) + p.cantidad;
+        p.distribucion.forEach((uid, cant) {
+          nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cant;
         });
       }
 
@@ -267,5 +167,63 @@ class PayController {
         'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
       });
     });
+  }
+
+  // ELIMINAR PAGO INDIVIDUAL
+  Future<void> eliminarPago(String groupId, PayModel pago) async {
+    await eliminarVariosPagos(groupId, [pago]);
+  }
+
+  // STREAMS (Se mantienen leyendo del documento central)
+  Stream<List<PayModel>> obtenerPagosDelGrupo(String groupId) {
+    return firestore
+        .collection('grupos')
+        .doc(groupId)
+        .collection('pagos')
+        .orderBy('fecha', descending: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((doc) => PayModel.fromFirestore(doc)).toList());
+  }
+
+  Stream<List<BalanceModel>> obtenerBalancesDelGrupo(String groupId) {
+    return firestore.collection('grupos').doc(groupId).snapshots().map((doc) {
+      if (!doc.exists) return [];
+      return GroupModel.fromFirestore(doc).balances;
+    });
+  }
+
+  Map<String, double> calcularDistribucion(
+      double total, List<String> participantesIds) {
+    if (participantesIds.isEmpty) return {};
+    int n = participantesIds.length;
+    double cuotaBase = (total / n * 100).floorToDouble() / 100;
+    Map<String, double> distribucion = {};
+    double sumaAcumulada = 0;
+    for (var id in participantesIds) {
+      distribucion[id] = cuotaBase;
+      sumaAcumulada += cuotaBase;
+    }
+    double diferencia = total - sumaAcumulada;
+    int centimosFaltantes = (diferencia * 100).round();
+    for (int i = 0; i < centimosFaltantes; i++) {
+      String idAfortunado = participantesIds[i % n];
+      distribucion[idAfortunado] =
+          double.parse((distribucion[idAfortunado]! + 0.01).toStringAsFixed(2));
+    }
+    return distribucion;
+  }
+
+  Future<void> borrarTodosLosDatosDelGrupo(String groupId) async {
+    final groupRef = firestore.collection('grupos').doc(groupId);
+    final batch = firestore.batch();
+    final pagosSnapshot = await groupRef.collection('pagos').get();
+    for (var doc in pagosSnapshot.docs) batch.delete(doc.reference);
+    batch.update(groupRef, {
+      'netos': {},
+      'balancesSimplificados': [],
+      'listaCompraCentralizada': []
+    });
+    await batch.commit();
   }
 }
