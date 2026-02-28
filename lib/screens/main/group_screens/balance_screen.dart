@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../controllers/pay_controller.dart';
 import '../../../models/balance_model.dart';
 import '../../../models/group_model.dart';
+import '../../../widgets/appbar_custom.dart';
+import '../../../controllers/themes_controller.dart';
+import 'settings_group_screen.dart';
 
 class BalanceScreen extends StatelessWidget {
   final GroupModel groupModel;
@@ -15,60 +18,82 @@ class BalanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
 
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        mini: true,
-        tooltip: "Recalcular balances",
-        onPressed: () => _payController.recalcularTodoElGrupo(groupModel.id),
-        child: const Icon(Icons.refresh),
-      ),
-      body: StreamBuilder<List<BalanceModel>>(
-        stream: _payController.obtenerBalancesDelGrupo(groupModel.id),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Theme(
+      data: ThemeController.crearTema(primaryColor),
+      child: Scaffold(
+        appBar: CustomAppBar(
+          title: 'Balance',
+          showLogout: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Ajustes',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        SettingsGroupScreen(groupModel: groupModel),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          mini: true,
+          tooltip: "Recalcular balances",
+          onPressed: () => _payController.recalcularTodoElGrupo(groupModel.id),
+          child: const Icon(Icons.refresh),
+        ),
+        body: StreamBuilder<List<BalanceModel>>(
+          stream: _payController.obtenerBalancesDelGrupo(groupModel.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return _buildEmptyState(primaryColor);
-          }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return _buildEmptyState(primaryColor);
+            }
 
-          final balances = snapshot.data!;
+            final balances = snapshot.data!;
 
-          // Ordenar alfabéticamente por el nombre de quien debe (deudor)
-          balances.sort((a, b) {
-            final nombreA = _obtenerNombre(a.deudorId).toLowerCase();
-            final nombreB = _obtenerNombre(b.deudorId).toLowerCase();
-            return nombreA.compareTo(nombreB);
-          });
+            // Ordenar alfabéticamente por el nombre de quien debe (deudor)
+            balances.sort((a, b) {
+              final nombreA = _obtenerNombre(a.deudorId).toLowerCase();
+              final nombreB = _obtenerNombre(b.deudorId).toLowerCase();
+              return nombreA.compareTo(nombreB);
+            });
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  "Pagos pendientes para cuadrar cuentas",
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "Pagos pendientes para cuadrar cuentas",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
-              ),
 
-              // Lista de Balances
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: balances.length,
-                  itemBuilder: (context, index) {
-                    final balance = balances[index];
-                    return _buildBalanceCard(balance, primaryColor);
-                  },
+                // Lista de Balances
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: balances.length,
+                    itemBuilder: (context, index) {
+                      final balance = balances[index];
+                      return _buildBalanceCard(balance, primaryColor);
+                    },
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -169,7 +194,7 @@ class BalanceScreen extends StatelessWidget {
               ),
             ),
 
-            // ACREEDOR (Derecha)
+            // Acreedor (Derecha)
             Expanded(
               child: Column(
                 children: [

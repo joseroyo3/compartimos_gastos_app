@@ -51,27 +51,8 @@ class _GroupNavigatorScreenState extends State<GroupNavigatorScreen> {
     return Theme(
       data: ThemeController.crearTema(colorGrupo),
       child: Scaffold(
-        appBar: _currentIndex == 0
-            ? null // La pestaña 0 tiene su propia AppBar en GroupScreen
-            : CustomAppBar(
-                title: _titles[_currentIndex],
-                showLogout: false,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    tooltip: 'Ajustes',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SettingsGroupScreen(
-                              groupModel: widget.groupModel),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+        appBar:
+            null, // Cada pantalla gestiona su propia AppBar y estados de selección
         body: IndexedStack(
           index: _currentIndex,
           children: _pages,

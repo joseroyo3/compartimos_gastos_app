@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../controllers/item_controller.dart';
 import '../../../models/group_model.dart';
 import '../../../models/item_model.dart';
+import '../../../widgets/appbar_custom.dart';
+import 'settings_group_screen.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   final GroupModel groupModel;
@@ -106,7 +108,25 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
               ],
             )
-          : null,
+          : CustomAppBar(
+              title: 'Lista de Compra',
+              showLogout: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  tooltip: 'Ajustes',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            SettingsGroupScreen(groupModel: widget.groupModel),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
       // Botón para añadir producto (solo si no estamos seleccionando)
       floatingActionButton: _isSelectionMode
           ? null
