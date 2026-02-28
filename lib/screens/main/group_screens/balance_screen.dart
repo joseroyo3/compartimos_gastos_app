@@ -29,6 +29,13 @@ class BalanceScreen extends StatelessWidget {
 
           final balances = snapshot.data!;
 
+          // Ordenar alfabéticamente por el nombre de quien debe (deudor)
+          balances.sort((a, b) {
+            final nombreA = _obtenerNombre(a.deudorId).toLowerCase();
+            final nombreB = _obtenerNombre(b.deudorId).toLowerCase();
+            return nombreA.compareTo(nombreB);
+          });
+
           return Column(
             children: [
               Padding(
