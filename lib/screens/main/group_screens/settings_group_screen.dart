@@ -167,6 +167,8 @@ class SettingsGroupScreen extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Grupo reseteado con éxito")),
                   );
+                  // Volver atrás a la pantalla del grupo
+                  Navigator.pop(context);
                 }
               } catch (e) {
                 print(e);
