@@ -236,11 +236,17 @@ class PayController {
     final balancesRef = groupRef.collection('balances');
 
     try {
-      // 1. Obtener todos los balances actuales
+      // 1. Pequeña espera para asegurar que Firestore ha procesado los cambios previos
+      // y la consulta no devuelva datos obsoletos (especialmente importante tras una transacción)
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // 2. Obtener todos los balances actuales
       final snapshot = await balancesRef.get();
+
+      // Si no hay balances, no hay nada que simplificar
       if (snapshot.docs.isEmpty) return;
 
-      // 2. Calcular saldos netos por persona
+      // 3. Calcular saldos netos por persona a partir de los balances existentes
       Map<String, double> netos = {};
 
       for (var doc in snapshot.docs) {
@@ -253,12 +259,14 @@ class PayController {
         netos[acreedor] = (netos[acreedor] ?? 0) + cantidad;
       }
 
-      // 3. Separar deudores y acreedores
+      // 4. Separar deudores (neto < 0) y acreedores (neto > 0)
       List<MapEntry<String, double>> deudores = [];
       List<MapEntry<String, double>> acreedores = [];
 
       netos.forEach((uid, amount) {
-        if (amount.abs() < 0.01) return; // Saldo cero
+        // Ignoramos saldos insignificantes (menos de 1 céntimo)
+        if (amount.abs() < 0.01) return;
+
         if (amount < 0) {
           deudores.add(MapEntry(uid, amount));
         } else {
@@ -266,16 +274,18 @@ class PayController {
         }
       });
 
-      // 4. Ordenar para optimizar
+      // Si no hay deudas netas, salimos tras borrar los documentos antiguos (se hace abajo)
+
+      // 5. Ordenar para optimizar el número de transferencias
       // Deudores de mayor deuda (más negativo) a menor
       deudores.sort((a, b) => a.value.compareTo(b.value));
       // Acreedores de mayor crédito (más positivo) a menor
       acreedores.sort((a, b) => b.value.compareTo(a.value));
 
-      // 5. Redistribuir deudas (Matching)
+      // 6. Redistribuir deudas (Algoritmo de Matching)
       WriteBatch batch = firestore.batch();
 
-      // Borramos todos los balances antiguos
+      // Borramos TODOS los balances antiguos para reemplazarlos por los simplificados
       for (var doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
@@ -292,9 +302,11 @@ class PayController {
 
         // El monto a saldar es el mínimo entre lo que debe uno y le deben al otro
         double amount = (debit < credit) ? debit : credit;
-        amount = double.parse(amount.toStringAsFixed(2)); // Redondear
+        amount = (amount * 100).roundToDouble() /
+            100; // Redondeo exacto a 2 decimales
 
-        if (amount > 0) {
+        if (amount > 0.009) {
+          // Solo si es al menos 1 céntimo
           DocumentReference newDoc = balancesRef.doc();
           batch.set(newDoc, {
             'deudorId': deudor.key,
@@ -308,21 +320,22 @@ class PayController {
         double newCredit = credit - amount;
 
         // Actualizar valores para la siguiente iteración
-        if (newDebit < 0.01) {
+        if (newDebit < 0.009) {
           i++; // Deudor liquidado
         } else {
           deudores[i] = MapEntry(deudor.key, -newDebit);
         }
 
-        if (newCredit < 0.01) {
+        if (newCredit < 0.009) {
           j++; // Acreedor liquidado
         } else {
           acreedores[j] = MapEntry(acreedor.key, newCredit);
         }
       }
 
-      // 6. Ejecutar cambios
+      // 7. Ejecutar cambios atómicamente
       await batch.commit();
+      print("Simplificación de deudas completada con éxito.");
     } catch (e) {
       print("Error al optimizar balances: $e");
     }
