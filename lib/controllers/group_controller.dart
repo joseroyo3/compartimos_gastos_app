@@ -123,6 +123,33 @@ class GroupController {
       batch.update(doc.reference, {'creadoPor': user.uid});
     }
 
+    // --- NUEVO: Migrar Netos y Balances en el documento del grupo ---
+    final groupSnap = await groupRef.get();
+    if (groupSnap.exists) {
+      final data = groupSnap.data() as Map<String, dynamic>;
+      Map<String, double> netos = {};
+      if (data['netos'] != null) {
+        (data['netos'] as Map<String, dynamic>).forEach((key, value) {
+          netos[key] = (value as num).toDouble();
+        });
+      }
+
+      // Si el invitado tenía saldo, se lo pasamos al usuario real
+      if (netos.containsKey(guestId)) {
+        double saldo = netos[guestId]!;
+        netos[user.uid] = (netos[user.uid] ?? 0) + saldo;
+        netos.remove(guestId);
+
+        // Recalculamos balances usando la lógica del controlador de pagos
+        // (Aunque lo ideal sería llamar a PayController, para evitar dependencias circulares
+        // o código duplicado, la lógica de simplificación es pura y pequeña)
+        // Por ahora, solo actualizamos el mapa de netos y forzamos un recalculo
+        // si el usuario entra a la pantalla de balance
+      }
+
+      batch.update(groupRef, {'netos': netos});
+    }
+
     // Ejecutar todas las migraciones
     await batch.commit();
 
@@ -168,7 +195,6 @@ class GroupController {
     });
   }
 
-
   // ELIMINAR GRUPO -------------------------------------
   Future<void> eliminarGrupo(String groupId) async {
     final user = auth.currentUser;
@@ -186,4 +212,3 @@ class GroupController {
     });
   }
 }
-

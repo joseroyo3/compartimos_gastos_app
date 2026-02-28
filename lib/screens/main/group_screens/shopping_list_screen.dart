@@ -66,7 +66,9 @@ class ShoppingListScreen extends StatelessWidget {
                 leading: CircleAvatar(
                   backgroundColor: colorGrupo.withOpacity(0.1),
                   child: Text(
-                    item.nombre.substring(0, 1).toUpperCase(),
+                    item.nombre.isNotEmpty
+                        ? item.nombre.substring(0, 1).toUpperCase()
+                        : "?",
                     style: TextStyle(
                         color: colorGrupo, fontWeight: FontWeight.bold),
                   ),
@@ -106,67 +108,19 @@ class ShoppingListScreen extends StatelessWidget {
     );
   }
 
-  // Diálogo para añadir producto
+  // Diálogo para añadir varios productos
   void _mostrarDialogoAnadir(BuildContext context, Color color) {
-    final nombreController = TextEditingController();
-    final descController = TextEditingController();
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Añadir a la lista"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nombreController,
-              autofocus: true,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: "Producto",
-                hintText: "Nombre del producto...",
-                focusedBorder:
-                    UnderlineInputBorder(borderSide: BorderSide(color: color)),
-                labelStyle: TextStyle(color: color),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: descController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: "Nota (Opcional)",
-                hintText: "Observaciones...",
-                focusedBorder:
-                    UnderlineInputBorder(borderSide: BorderSide(color: color)),
-                labelStyle: TextStyle(color: color),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: color,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              if (nombreController.text.trim().isNotEmpty) {
-                _shoppingController.agregarProducto(
-                  groupModel.id,
-                  nombreController.text.trim(),
-                  descController.text.trim(),
-                );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text("Añadir"),
-          ),
-        ],
+      barrierDismissible: false, // NO se cierra al dar fuera
+      builder: (context) => _BulkAddDialog(
+        color: color,
+        onSave: (productos) {
+          if (productos.isNotEmpty) {
+            _shoppingController.agregarVariosProductos(
+                groupModel.id, productos);
+          }
+        },
       ),
     );
   }
@@ -177,5 +131,147 @@ class ShoppingListScreen extends StatelessWidget {
       return groupModel.miembros[uid]!;
     }
     return "Alguien";
+  }
+}
+
+// Widget interno del diálogo para manejar su propio estado
+class _BulkAddDialog extends StatefulWidget {
+  final Color color;
+  final Function(List<Map<String, String>>) onSave;
+
+  const _BulkAddDialog({required this.color, required this.onSave});
+
+  @override
+  State<_BulkAddDialog> createState() => _BulkAddDialogState();
+}
+
+class _BulkAddDialogState extends State<_BulkAddDialog> {
+  final List<Map<String, String>> _productosTemporales = [];
+  final _nombreController = TextEditingController();
+  final _descController = TextEditingController();
+
+  void _anadirAListaTemporal() {
+    final nombre = _nombreController.text.trim();
+    if (nombre.isNotEmpty) {
+      setState(() {
+        _productosTemporales.add({
+          'nombre': nombre,
+          'descripcion': _descController.text.trim(),
+        });
+        _nombreController.clear();
+        _descController.clear();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Añadir a la lista"),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Formulario para un producto
+            TextField(
+              controller: _nombreController,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: "Producto",
+                hintText: "Ej: Leche, Huevos...",
+                focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: widget.color)),
+                labelStyle: TextStyle(color: widget.color),
+              ),
+            ),
+            TextField(
+              controller: _descController,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: "Nota (Opcional)",
+                focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: widget.color)),
+                labelStyle: TextStyle(color: widget.color),
+              ),
+              onSubmitted: (_) => _anadirAListaTemporal(),
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: _anadirAListaTemporal,
+              icon: Icon(Icons.add_circle_outline, color: widget.color),
+              label: Text("Añadir a la lista temporal",
+                  style: TextStyle(color: widget.color)),
+            ),
+            const Divider(),
+            // Lista de productos ya añadidos en el diálogo
+            if (_productosTemporales.isNotEmpty)
+              Flexible(
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _productosTemporales.length,
+                    itemBuilder: (context, index) {
+                      final item = _productosTemporales[index];
+                      return ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(item['nombre']!,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: item['descripcion']!.isNotEmpty
+                            ? Text(item['descripcion']!)
+                            : null,
+                        trailing: IconButton(
+                          icon: const Icon(Icons.close,
+                              size: 18, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              _productosTemporales.removeAt(index);
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text("No hay productos añadidos aún",
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.color,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () {
+            // Si hay algo en los campos pero no se añadió a la lista temporal, lo añadimos
+            if (_nombreController.text.trim().isNotEmpty) {
+              _anadirAListaTemporal();
+            }
+
+            if (_productosTemporales.isNotEmpty) {
+              widget.onSave(_productosTemporales);
+              Navigator.pop(context);
+            }
+          },
+          child: Text(
+              "Guardar ${_productosTemporales.length > 0 ? '(${_productosTemporales.length})' : ''}"),
+        ),
+      ],
+    );
   }
 }

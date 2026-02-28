@@ -16,6 +16,12 @@ class BalanceScreen extends StatelessWidget {
     final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        mini: true,
+        tooltip: "Recalcular balances",
+        onPressed: () => _payController.recalcularTodoElGrupo(groupModel.id),
+        child: const Icon(Icons.refresh),
+      ),
       body: StreamBuilder<List<BalanceModel>>(
         stream: _payController.obtenerBalancesDelGrupo(groupModel.id),
         builder: (context, snapshot) {

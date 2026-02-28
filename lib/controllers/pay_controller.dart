@@ -1,132 +1,143 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/pay_model.dart' show PayModel;
 import '../models/balance_model.dart';
+import '../models/group_model.dart';
 
 class PayController {
-  //final FirebaseFirestore firestore = FirebaseFirestore.instance;
   FirebaseFirestore get firestore => FirebaseFirestore.instance;
 
-  // CREAR PAGO Y ACTUALIZAR BALANCES AUTOMÁTICAMENTE
+  // CREAR PAGO Y ACTUALIZAR BALANCES CENTRALIZADOS
   Future<void> crearPago(String groupId, PayModel pago) async {
     final groupRef = firestore.collection('grupos').doc(groupId);
     final paymentsRef = groupRef.collection('pagos');
 
     await firestore.runTransaction((transaction) async {
-      // referencia para el nuevo documento de pago
-      final newPaymentDoc = paymentsRef.doc();
+      // 1. Obtener datos actuales del grupo
+      final groupSnap = await transaction.get(groupRef);
+      if (!groupSnap.exists) return;
 
-      //Guardar el Pago
+      final GroupModel group = GroupModel.fromFirestore(groupSnap);
+      Map<String, double> nuevosNetos = Map.from(group.netos);
+
+      // 2. Guardar el Pago
+      final newPaymentDoc = paymentsRef.doc();
       transaction.set(newPaymentDoc, pago.toMap());
 
-      //ACTUALIZAR BALANCES
-      for (var entry in pago.distribucion.entries) {
-        String deudorId = entry.key; // El que debe
-        double cantidadQueDebe = entry.value;
-        String acreedorId = pago.idPagador; // El que pago
+      // 3. ACTUALIZAR NETOS
+      // Al que paga le sumamos el total
+      nuevosNetos[pago.idPagador] =
+          (nuevosNetos[pago.idPagador] ?? 0) + pago.cantidad;
 
-        // no creamos deuda al pagado
-        if (deudorId == acreedorId) continue;
-        if (cantidadQueDebe <= 0) continue;
+      // A cada participante le restamos su parte
+      pago.distribucion.forEach((uid, cantidadQueDebe) {
+        nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cantidadQueDebe;
+      });
 
-        // Llamamos a la lógica de actualizar deuda
-        await _actualizarBalanceTransaccional(
-            transaction, groupRef, deudorId, acreedorId, cantidadQueDebe);
+      // 4. Simplificar deudas a partir de los nuevos netos
+      List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
+
+      // 5. Guardar todo en el documento del grupo
+      transaction.update(groupRef, {
+        'netos': nuevosNetos,
+        'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
+      });
+    });
+  }
+
+  // ELIMINAR PAGO Y REVERTIR NETOS
+  Future<void> eliminarPago(String groupId, PayModel pago) async {
+    final groupRef = firestore.collection('grupos').doc(groupId);
+    final pagoRef = groupRef.collection('pagos').doc(pago.id);
+
+    await firestore.runTransaction((transaction) async {
+      // 1. Obtener datos actuales
+      final groupSnap = await transaction.get(groupRef);
+      if (!groupSnap.exists) return;
+
+      final GroupModel group = GroupModel.fromFirestore(groupSnap);
+      Map<String, double> nuevosNetos = Map.from(group.netos);
+
+      // 2. Eliminar el pago
+      transaction.delete(pagoRef);
+
+      // 3. REVERTIR NETOS
+      // Al que pagó le restamos (porque ya no puso ese dinero)
+      nuevosNetos[pago.idPagador] =
+          (nuevosNetos[pago.idPagador] ?? 0) - pago.cantidad;
+
+      // A los participantes les devolvemos su parte (sumamos)
+      pago.distribucion.forEach((uid, cantidadQueDebia) {
+        nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) + cantidadQueDebia;
+      });
+
+      // 4. Recalcular
+      List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
+
+      // 5. Actualizar grupo
+      transaction.update(groupRef, {
+        'netos': nuevosNetos,
+        'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
+      });
+    });
+  }
+
+  // Algoritmo de simplificación puro (sin efectos secundarios de DB)
+  List<BalanceModel> _calcularSimplificacion(Map<String, double> netos) {
+    List<MapEntry<String, double>> deudores = [];
+    List<MapEntry<String, double>> acreedores = [];
+
+    netos.forEach((uid, amount) {
+      if (amount.abs() < 0.01) return;
+      if (amount < 0) {
+        deudores.add(MapEntry(uid, amount));
+      } else {
+        acreedores.add(MapEntry(uid, amount));
       }
     });
 
-    // Optimizar balances (simplificación de deuda)
-    await simplificarDeudas(groupId);
-  }
+    deudores.sort((a, b) => a.value.compareTo(b.value));
+    acreedores.sort((a, b) => b.value.compareTo(a.value));
 
-  // LÓGICA DE ACTUALIZACIÓN DE BALANCE
-  // Esta función comprueba si ya existía deuda entre las dos personas
-  Future<void> _actualizarBalanceTransaccional(
-    Transaction transaction,
-    DocumentReference groupRef,
-    String deudorId, // El que debe
-    String acreedorId, // Al que le deben
-    double monto, // 20€ (o negativo si estamos borrando)
-  ) async {
-    final balancesRef = groupRef.collection('balances');
+    List<BalanceModel> resultado = [];
+    int i = 0;
+    int j = 0;
 
-    // Buscamos si existe deuda en dirección DIRECTA (A debe a B)
-    final queryDirecta = await balancesRef
-        .where('deudorId', isEqualTo: deudorId)
-        .where('acreedorId', isEqualTo: acreedorId)
-        .get();
+    // Copias para no mutar las listas originales durante el matching
+    List<MapEntry<String, double>> d = List.from(deudores);
+    List<MapEntry<String, double>> a = List.from(acreedores);
 
-    if (queryDirecta.docs.isNotEmpty) {
-      DocumentReference docRef = queryDirecta.docs.first.reference;
-      double deudaActual =
-          (queryDirecta.docs.first.data()['cantidad'] as num).toDouble();
+    while (i < d.length && j < a.length) {
+      double debit = d[i].value.abs();
+      double credit = a[j].value;
 
-      // Calculamos el nuevo balance
-      double nuevoBalance = deudaActual + monto;
+      double amount = (debit < credit) ? debit : credit;
+      amount = (amount * 100).roundToDouble() / 100;
 
-      if (nuevoBalance.abs() < 0.01) {
-        // Si es casi cero, BORRAMOS EL DOCUMENTO
-        transaction.delete(docRef);
-      } else if (nuevoBalance > 0) {
-        // Si sigue siendo positivo, actualizamos
-        transaction.update(docRef, {'cantidad': nuevoBalance});
-      } else {
-        // Se invirtió la deuda (se volvió negativa)
-        transaction.delete(docRef); // Borramos la vieja
-
-        // Creamos la nueva invertida
-        DocumentReference newDoc = balancesRef.doc();
-        transaction.set(newDoc, {
-          'deudorId': acreedorId, // Invertimos roles
-          'acreedorId': deudorId,
-          'cantidad': nuevoBalance.abs(), // Guardamos positivo
-        });
+      if (amount > 0.009) {
+        resultado.add(BalanceModel(
+          id: '',
+          deudorId: d[i].key,
+          acreedorId: a[j].key,
+          cantidad: amount,
+        ));
       }
-      return;
-    }
 
-    // Buscamos si existe deuda en dirección INVERSA (B debe a A)
-    final queryInversa = await balancesRef
-        .where('deudorId', isEqualTo: acreedorId)
-        .where('acreedorId', isEqualTo: deudorId)
-        .get();
+      double newDebit = debit - amount;
+      double newCredit = credit - amount;
 
-    if (queryInversa.docs.isNotEmpty) {
-      DocumentReference docRef = queryInversa.docs.first.reference;
-      double deudaExistente =
-          (queryInversa.docs.first.data()['cantidad'] as num).toDouble();
-
-      // Al ser inversa, restamos el monto
-      double nuevoBalance = deudaExistente - monto;
-
-      if (nuevoBalance.abs() < 0.01) {
-        // En paz -> BORRAMOS EL DOCUMENTO
-        transaction.delete(docRef);
-      } else if (nuevoBalance > 0) {
-        // Aún queda deuda en esa dirección
-        transaction.update(docRef, {'cantidad': nuevoBalance});
+      if (newDebit < 0.009) {
+        i++;
       } else {
-        // Se queda el balance en negativo, cambiamos dirección (volvemos a la original)
-        transaction.delete(docRef);
-
-        DocumentReference newDoc = balancesRef.doc();
-        transaction.set(newDoc, {
-          'deudorId': deudorId, // Volvemos a la dirección original
-          'acreedorId': acreedorId,
-          'cantidad': nuevoBalance.abs(),
-        });
+        d[i] = MapEntry(d[i].key, -newDebit);
       }
-      return;
-    }
 
-    // No existe relación previa - Creamos balance nuevo
-    if (monto.abs() > 0.01) {
-      DocumentReference newDoc = balancesRef.doc();
-      transaction.set(newDoc, {
-        'deudorId': deudorId,
-        'acreedorId': acreedorId,
-        'cantidad': monto.abs(),
-      });
+      if (newCredit < 0.009) {
+        j++;
+      } else {
+        a[j] = MapEntry(a[j].key, newCredit);
+      }
     }
+    return resultado;
   }
 
   // LEER PAGOS CON STREAM
@@ -142,17 +153,11 @@ class PayController {
     });
   }
 
-  // LEER BALANCES CON STREAM
+  // LEER BALANCES CON STREAM (Ahora lee del documento del grupo)
   Stream<List<BalanceModel>> obtenerBalancesDelGrupo(String groupId) {
-    return firestore
-        .collection('grupos')
-        .doc(groupId)
-        .collection('balances')
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => BalanceModel.fromFirestore(doc))
-          .toList();
+    return firestore.collection('grupos').doc(groupId).snapshots().map((doc) {
+      if (!doc.exists) return [];
+      return GroupModel.fromFirestore(doc).balances;
     });
   }
 
@@ -183,33 +188,6 @@ class PayController {
     return distribucion;
   }
 
-  // ELIMINAR PAGO Y REVERTIR
-  Future<void> eliminarPago(String groupId, PayModel pago) async {
-    final groupRef = firestore.collection('grupos').doc(groupId);
-    final pagoRef = groupRef.collection('pagos').doc(pago.id);
-
-    await firestore.runTransaction((transaction) async {
-      // Eliminamos el documento del pago
-      transaction.delete(pagoRef);
-
-      // REVERTIMOS LOS BALANCES
-      for (var entry in pago.distribucion.entries) {
-        String deudorId = entry.key;
-        double cantidadQueDebia = entry.value;
-        String acreedorId = pago.idPagador;
-
-        if (deudorId == acreedorId) continue;
-
-        await _actualizarBalanceTransaccional(transaction, groupRef, deudorId,
-            acreedorId, -cantidadQueDebia // INVERTIMOS EL SIGNO
-            );
-      }
-    });
-
-    // Optimizar balances tras eliminar
-    await simplificarDeudas(groupId);
-  }
-
   Future<void> borrarTodosLosDatosDelGrupo(String groupId) async {
     final groupRef = firestore.collection('grupos').doc(groupId);
     final batch = firestore.batch();
@@ -220,124 +198,39 @@ class PayController {
       batch.delete(doc.reference);
     }
 
-    // Obtener todos los balances
-    final balancesSnapshot = await groupRef.collection('balances').get();
-    for (var doc in balancesSnapshot.docs) {
-      batch.delete(doc.reference);
-    }
+    // Resetear netos y balances en el grupo
+    batch.update(groupRef, {
+      'netos': {},
+      'balancesSimplificados': [],
+    });
 
-    // Ejecutar to do a la vez
     await batch.commit();
   }
 
-  // OPTIMIZAR BALANCES (Simplificación de deudas: A->B, B->C  =>  A->C)
-  Future<void> simplificarDeudas(String groupId) async {
+  // Función para forzar recalcular todo desde cero (útil si hay inconsistencias)
+  Future<void> recalcularTodoElGrupo(String groupId) async {
     final groupRef = firestore.collection('grupos').doc(groupId);
-    final balancesRef = groupRef.collection('balances');
 
-    try {
-      // 1. Pequeña espera para asegurar que Firestore ha procesado los cambios previos
-      // y la consulta no devuelva datos obsoletos (especialmente importante tras una transacción)
-      await Future.delayed(const Duration(milliseconds: 500));
+    await firestore.runTransaction((transaction) async {
+      final paymentsSnap = await groupRef.collection('pagos').get();
+      Map<String, double> nuevosNetos = {};
 
-      // 2. Obtener todos los balances actuales
-      final snapshot = await balancesRef.get();
+      for (var doc in paymentsSnap.docs) {
+        final pago = PayModel.fromFirestore(doc);
+        nuevosNetos[pago.idPagador] =
+            (nuevosNetos[pago.idPagador] ?? 0) + pago.cantidad;
 
-      // Si no hay balances, no hay nada que simplificar
-      if (snapshot.docs.isEmpty) return;
-
-      // 3. Calcular saldos netos por persona a partir de los balances existentes
-      Map<String, double> netos = {};
-
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        String deudor = data['deudorId'];
-        String acreedor = data['acreedorId'];
-        double cantidad = (data['cantidad'] as num).toDouble();
-
-        netos[deudor] = (netos[deudor] ?? 0) - cantidad;
-        netos[acreedor] = (netos[acreedor] ?? 0) + cantidad;
+        pago.distribucion.forEach((uid, cantidad) {
+          nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cantidad;
+        });
       }
 
-      // 4. Separar deudores (neto < 0) y acreedores (neto > 0)
-      List<MapEntry<String, double>> deudores = [];
-      List<MapEntry<String, double>> acreedores = [];
+      List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
 
-      netos.forEach((uid, amount) {
-        // Ignoramos saldos insignificantes (menos de 1 céntimo)
-        if (amount.abs() < 0.01) return;
-
-        if (amount < 0) {
-          deudores.add(MapEntry(uid, amount));
-        } else {
-          acreedores.add(MapEntry(uid, amount));
-        }
+      transaction.update(groupRef, {
+        'netos': nuevosNetos,
+        'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
       });
-
-      // Si no hay deudas netas, salimos tras borrar los documentos antiguos (se hace abajo)
-
-      // 5. Ordenar para optimizar el número de transferencias
-      // Deudores de mayor deuda (más negativo) a menor
-      deudores.sort((a, b) => a.value.compareTo(b.value));
-      // Acreedores de mayor crédito (más positivo) a menor
-      acreedores.sort((a, b) => b.value.compareTo(a.value));
-
-      // 6. Redistribuir deudas (Algoritmo de Matching)
-      WriteBatch batch = firestore.batch();
-
-      // Borramos TODOS los balances antiguos para reemplazarlos por los simplificados
-      for (var doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-
-      int i = 0; // Índice deudores
-      int j = 0; // Índice acreedores
-
-      while (i < deudores.length && j < acreedores.length) {
-        var deudor = deudores[i];
-        var acreedor = acreedores[j];
-
-        double debit = deudor.value.abs();
-        double credit = acreedor.value;
-
-        // El monto a saldar es el mínimo entre lo que debe uno y le deben al otro
-        double amount = (debit < credit) ? debit : credit;
-        amount = (amount * 100).roundToDouble() /
-            100; // Redondeo exacto a 2 decimales
-
-        if (amount > 0.009) {
-          // Solo si es al menos 1 céntimo
-          DocumentReference newDoc = balancesRef.doc();
-          batch.set(newDoc, {
-            'deudorId': deudor.key,
-            'acreedorId': acreedor.key,
-            'cantidad': amount,
-          });
-        }
-
-        // Ajustar remanentes
-        double newDebit = debit - amount;
-        double newCredit = credit - amount;
-
-        // Actualizar valores para la siguiente iteración
-        if (newDebit < 0.009) {
-          i++; // Deudor liquidado
-        } else {
-          deudores[i] = MapEntry(deudor.key, -newDebit);
-        }
-
-        if (newCredit < 0.009) {
-          j++; // Acreedor liquidado
-        } else {
-          acreedores[j] = MapEntry(acreedor.key, newCredit);
-        }
-      }
-
-      // 7. Ejecutar cambios atómicamente
-      await batch.commit();
-      print("Simplificación de deudas completada con éxito.");
-    } catch (e) {
-      print("Error al optimizar balances: $e");
-    }
+    });
   }
 }
