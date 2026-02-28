@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../controllers/group_controller.dart';
 import '../../controllers/themes_controller.dart';
@@ -196,12 +195,13 @@ class FloattingButton extends StatelessWidget {
                                   backgroundColor: primaryColor),
                               icon: const Icon(Icons.add, color: Colors.white),
                               onPressed: () {
-                                if (nombreInvitadoController.text.isNotEmpty)
+                                if (nombreInvitadoController.text.isNotEmpty) {
                                   setStateDialog(() {
                                     listaInvitados.add(
                                         nombreInvitadoController.text.trim());
                                     nombreInvitadoController.clear();
                                   });
+                                }
                               })
                         ]),
                         if (listaInvitados.isNotEmpty)
@@ -283,8 +283,9 @@ class FloattingButton extends StatelessWidget {
                                 ...miembrosEncontrados!.entries.map((entry) {
                                   bool esInvitado =
                                       entry.key.startsWith('invitado_');
-                                  if (!esInvitado)
+                                  if (!esInvitado) {
                                     return const SizedBox.shrink();
+                                  }
 
                                   return RadioListTile<String?>(
                                     value: entry.key,
@@ -296,7 +297,7 @@ class FloattingButton extends StatelessWidget {
                                     onChanged: (val) => setStateDialog(
                                         () => idSeleccionado = val),
                                   );
-                                }).toList(),
+                                }),
                               ],
                             ),
                           ),

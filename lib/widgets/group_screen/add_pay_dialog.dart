@@ -67,7 +67,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     hintText: '0.00 €',
                     border: InputBorder.none,
                   ),
-                  onTap: () { // al apretar al textfield no "desaparecia" la cantidad
+                  onTap: () {
+                    // al apretar al textfield no "desaparecia" la cantidad
                     _cantidadController.selection = TextSelection(
                       baseOffset: 0,
                       extentOffset: _cantidadController.text.length,
@@ -78,8 +79,9 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                         RegExp(r'^\d+([.,]\d{0,2})?')),
                   ],
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Introduce cantidad';
+                    }
                     String cleanValue = value.replaceAll(',', '.');
                     if (double.tryParse(cleanValue) == null ||
                         double.parse(cleanValue) <= 0) {
@@ -108,7 +110,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
 
                 // QUIÉN PAGÓ -------------------------------------
                 DropdownButtonFormField<String>(
-                  value: _idPagadorSeleccionado,
+                  initialValue: _idPagadorSeleccionado,
                   isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Pagado por',

@@ -37,8 +37,9 @@ class GroupController {
     // TODOS los grupos por UID
     String? uid = FirebaseAuth.instance.currentUser?.uid;
 
-    if (uid == null)
+    if (uid == null) {
       return const Stream.empty(); // Por seguridad si no hay login
+    }
 
     return firestore
         .collection('grupos')

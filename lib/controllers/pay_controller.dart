@@ -33,6 +33,9 @@ class PayController {
             transaction, groupRef, deudorId, acreedorId, cantidadQueDebe);
       }
     });
+
+    // Optimizar balances (simplificación de deuda)
+    await simplificarDeudas(groupId);
   }
 
   // LÓGICA DE ACTUALIZACIÓN DE BALANCE
@@ -202,6 +205,9 @@ class PayController {
             );
       }
     });
+
+    // Optimizar balances tras eliminar
+    await simplificarDeudas(groupId);
   }
 
   Future<void> borrarTodosLosDatosDelGrupo(String groupId) async {
@@ -222,5 +228,103 @@ class PayController {
 
     // Ejecutar to do a la vez
     await batch.commit();
+  }
+
+  // OPTIMIZAR BALANCES (Simplificación de deudas: A->B, B->C  =>  A->C)
+  Future<void> simplificarDeudas(String groupId) async {
+    final groupRef = firestore.collection('grupos').doc(groupId);
+    final balancesRef = groupRef.collection('balances');
+
+    try {
+      // 1. Obtener todos los balances actuales
+      final snapshot = await balancesRef.get();
+      if (snapshot.docs.isEmpty) return;
+
+      // 2. Calcular saldos netos por persona
+      Map<String, double> netos = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        String deudor = data['deudorId'];
+        String acreedor = data['acreedorId'];
+        double cantidad = (data['cantidad'] as num).toDouble();
+
+        netos[deudor] = (netos[deudor] ?? 0) - cantidad;
+        netos[acreedor] = (netos[acreedor] ?? 0) + cantidad;
+      }
+
+      // 3. Separar deudores y acreedores
+      List<MapEntry<String, double>> deudores = [];
+      List<MapEntry<String, double>> acreedores = [];
+
+      netos.forEach((uid, amount) {
+        if (amount.abs() < 0.01) return; // Saldo cero
+        if (amount < 0) {
+          deudores.add(MapEntry(uid, amount));
+        } else {
+          acreedores.add(MapEntry(uid, amount));
+        }
+      });
+
+      // 4. Ordenar para optimizar
+      // Deudores de mayor deuda (más negativo) a menor
+      deudores.sort((a, b) => a.value.compareTo(b.value));
+      // Acreedores de mayor crédito (más positivo) a menor
+      acreedores.sort((a, b) => b.value.compareTo(a.value));
+
+      // 5. Redistribuir deudas (Matching)
+      WriteBatch batch = firestore.batch();
+
+      // Borramos todos los balances antiguos
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      int i = 0; // Índice deudores
+      int j = 0; // Índice acreedores
+
+      while (i < deudores.length && j < acreedores.length) {
+        var deudor = deudores[i];
+        var acreedor = acreedores[j];
+
+        double debit = deudor.value.abs();
+        double credit = acreedor.value;
+
+        // El monto a saldar es el mínimo entre lo que debe uno y le deben al otro
+        double amount = (debit < credit) ? debit : credit;
+        amount = double.parse(amount.toStringAsFixed(2)); // Redondear
+
+        if (amount > 0) {
+          DocumentReference newDoc = balancesRef.doc();
+          batch.set(newDoc, {
+            'deudorId': deudor.key,
+            'acreedorId': acreedor.key,
+            'cantidad': amount,
+          });
+        }
+
+        // Ajustar remanentes
+        double newDebit = debit - amount;
+        double newCredit = credit - amount;
+
+        // Actualizar valores para la siguiente iteración
+        if (newDebit < 0.01) {
+          i++; // Deudor liquidado
+        } else {
+          deudores[i] = MapEntry(deudor.key, -newDebit);
+        }
+
+        if (newCredit < 0.01) {
+          j++; // Acreedor liquidado
+        } else {
+          acreedores[j] = MapEntry(acreedor.key, newCredit);
+        }
+      }
+
+      // 6. Ejecutar cambios
+      await batch.commit();
+    } catch (e) {
+      print("Error al optimizar balances: $e");
+    }
   }
 }
