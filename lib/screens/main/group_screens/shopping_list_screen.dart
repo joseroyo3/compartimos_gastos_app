@@ -8,7 +8,7 @@ import 'settings_group_screen.dart';
 class ShoppingListScreen extends StatefulWidget {
   final GroupModel groupModel;
 
-  ShoppingListScreen({super.key, required this.groupModel});
+  const ShoppingListScreen({super.key, required this.groupModel});
 
   @override
   State<ShoppingListScreen> createState() => _ShoppingListScreenState();
@@ -177,9 +177,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
               return ListTile(
                 selected: isSelected,
-                selectedTileColor: widget.groupModel.colorValue != null
-                    ? Color(widget.groupModel.colorValue).withOpacity(0.05)
-                    : Colors.grey[100],
+                selectedTileColor: Color(widget.groupModel.colorValue).withOpacity(0.05),
                 onTap: () {
                   if (_isSelectionMode) {
                     _toggleSelection(item.id);
@@ -422,7 +420,7 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
             }
           },
           child: Text(
-              "Guardar ${_productosTemporales.length > 0 ? '(${_productosTemporales.length})' : ''}"),
+              "Guardar ${_productosTemporales.isNotEmpty ? '(${_productosTemporales.length})' : ''}"),
         ),
       ],
     );

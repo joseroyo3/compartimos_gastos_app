@@ -11,7 +11,7 @@ import '../../../widgets/group_screen/detail_group_dialog.dart';
 class GroupScreen extends StatefulWidget {
   final GroupModel groupModel;
 
-  GroupScreen({super.key, required this.groupModel});
+  const GroupScreen({super.key, required this.groupModel});
 
   @override
   State<GroupScreen> createState() => _GroupScreenState();

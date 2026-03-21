@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../controllers/themes_controller.dart';
 import '../../models/group_model.dart';
-import '../../widgets/appbar_custom.dart';
 
 import '../screens/main/group_screens/balance_screen.dart';
 import '../screens/main/group_screens/group_screen.dart';
-import '../screens/main/group_screens/settings_group_screen.dart';
 import '../screens/main/group_screens/shopping_list_screen.dart';
 
 class GroupNavigatorScreen extends StatefulWidget {

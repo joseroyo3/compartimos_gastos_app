@@ -218,7 +218,9 @@ class PayController {
     final groupRef = firestore.collection('grupos').doc(groupId);
     final batch = firestore.batch();
     final pagosSnapshot = await groupRef.collection('pagos').get();
-    for (var doc in pagosSnapshot.docs) batch.delete(doc.reference);
+    for (var doc in pagosSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
     batch.update(groupRef, {
       'netos': {},
       'balancesSimplificados': [],
