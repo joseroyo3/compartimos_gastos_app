@@ -4,6 +4,7 @@ import '../../../models/balance_model.dart';
 import '../../../models/group_model.dart';
 import '../../../widgets/appbar_custom.dart';
 import '../../../controllers/themes_controller.dart';
+import '../../../widgets/responsive_list_container.dart';
 import 'settings_group_screen.dart';
 
 class BalanceScreen extends StatelessWidget {
@@ -81,13 +82,15 @@ class BalanceScreen extends StatelessWidget {
 
                 // Lista de Balances
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: balances.length,
-                    itemBuilder: (context, index) {
-                      final balance = balances[index];
-                      return _buildBalanceCard(balance, primaryColor);
-                    },
+                  child: ResponsiveListContainer(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: balances.length,
+                      itemBuilder: (context, index) {
+                        final balance = balances[index];
+                        return _buildBalanceCard(balance, primaryColor);
+                      },
+                    ),
                   ),
                 ),
               ],

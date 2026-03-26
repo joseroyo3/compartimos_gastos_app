@@ -4,6 +4,7 @@ import '../../controllers/gruop_navigator_controller.dart';
 import '../../models/group_model.dart';
 import '../../widgets/appbar_custom.dart';
 import '../../widgets/group_screen/floating_button.dart';
+import '../../widgets/responsive_list_container.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,43 +37,45 @@ class _HomeScreenState extends State<HomeScreen> {
           var grupos = snapshot.data!;
 
           // GRUPOSTOTALES
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: grupos.length,
-            itemBuilder: (context, index) {
-              final grupo = grupos[index];
+          return ResponsiveListContainer(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: grupos.length,
+              itemBuilder: (context, index) {
+                final grupo = grupos[index];
 
-              Color colorGrupo = Color(grupo.colorValue);
+                Color colorGrupo = Color(grupo.colorValue);
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 15),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorGrupo, // El color del grupos
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 15, horizontal: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 15),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorGrupo, // El color del grupos
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 15, horizontal: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              GroupNavigatorScreen(groupModel: grupo),
+                        ),
+                      );
+                    },
+                    onLongPress: () => _mostrarDialogoEliminar(context, grupo),
+                    child: Text(
+                      grupo.nombre,
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            GroupNavigatorScreen(groupModel: grupo),
-                      ),
-                    );
-                  },
-                  onLongPress: () => _mostrarDialogoEliminar(context, grupo),
-                  child: Text(
-                    grupo.nombre,
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),

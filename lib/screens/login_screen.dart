@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _initPrefs();
   }
 
-  @override //
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
@@ -66,7 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
-      // Feedback visual simple (error generico, no comprueba regex)
       if (result == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error en la autenticación')),
@@ -81,89 +80,85 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const LogoWidget(),
-                TextFormField(
-                  controller: _emailCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Email",
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passCtrl,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: "Contraseña",
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                Row(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Form(
+                key: _formKey,
+                child: Column(
                   children: [
-                    Checkbox(
-                      value: _rememberMe,
-                      onChanged: (v) => _toggleRememberMe(v ?? false),
+                    const LogoWidget(),
+                    TextFormField(
+                      controller: _emailCtrl,
+                      decoration: const InputDecoration(
+                        labelText: "Email",
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
                     ),
-                    const Text('Recordar usuario'),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                if (_isLoading)
-                  const CircularProgressIndicator()
-                else ...[
-                  //lista de widgets
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _executeAuth(
-                        () => _controller.login(
-                          _emailCtrl.text.trim(),
-                          _passCtrl.text.trim(),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passCtrl,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: "Contraseña",
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                    ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberMe,
+                          onChanged: (v) => _toggleRememberMe(v ?? false),
+                        ),
+                        const Text('Recordar usuario'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    if (_isLoading)
+                      const CircularProgressIndicator()
+                    else ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _executeAuth(
+                            () => _controller.login(
+                              _emailCtrl.text.trim(),
+                              _passCtrl.text.trim(),
+                            ),
+                          ),
+                          child: const Text("Entrar"),
                         ),
                       ),
-                      child: const Text("Entrar"),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // DIALOGS REGISTRO
-                  TextButton(
-                    onPressed: () =>
-                        AuthDialogs.showRegister(context, _controller),
-                    child: const Text("¿No tienes cuenta? Regístrate"),
-                  ),
-
-                  // DIALOGS RECUPERAR CONTRASEÑA
-                  TextButton(
-                    onPressed: () => AuthDialogs.showForgotPass(
-                      context,
-                      _emailCtrl,
-                      _controller,
-                    ),
-                    child: const Text('¿Olvidaste tu contraseña?'),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // ANONIMO
-                  SizedBox(
-                    child: TextButton(
-                      onPressed: () => _executeAuth(
-                        () => _controller.signInAnonymously(),
-                        validate: false,
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () =>
+                            AuthDialogs.showRegister(context, _controller),
+                        child: const Text("¿No tienes cuenta? Regístrate"),
                       ),
-                      child: const Text("Entrar como Invitado"),
-                    ),
-                  ),
-                ],
-              ],
+                      TextButton(
+                        onPressed: () => AuthDialogs.showForgotPass(
+                          context,
+                          _emailCtrl,
+                          _controller,
+                        ),
+                        child: const Text('¿Olvidaste tu contraseña?'),
+                      ),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        child: TextButton(
+                          onPressed: () => _executeAuth(
+                            () => _controller.signInAnonymously(),
+                            validate: false,
+                          ),
+                          child: const Text("Entrar como Invitado"),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

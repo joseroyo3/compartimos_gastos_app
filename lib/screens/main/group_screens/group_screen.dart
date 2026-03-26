@@ -7,6 +7,7 @@ import '../../../models/pay_model.dart';
 import '../../../widgets/appbar_custom.dart';
 import '../../../widgets/group_screen/add_pay_dialog.dart';
 import '../../../widgets/group_screen/detail_group_dialog.dart';
+import '../../../widgets/responsive_list_container.dart';
 
 class GroupScreen extends StatefulWidget {
   final GroupModel groupModel;
@@ -176,83 +177,85 @@ class _GroupScreenState extends State<GroupScreen> {
 
                   var pagos = snapshot.data!;
 
-                  return ListView.builder(
-                    itemCount: pagos.length,
-                    itemBuilder: (context, index) {
-                      final pago = pagos[index];
-                      final isSelected =
-                          _selectedPagos.any((p) => p.id == pago.id);
+                  return ResponsiveListContainer(
+                    child: ListView.builder(
+                      itemCount: pagos.length,
+                      itemBuilder: (context, index) {
+                        final pago = pagos[index];
+                        final isSelected =
+                            _selectedPagos.any((p) => p.id == pago.id);
 
-                      final date = pago.fecha.toDate();
-                      String fechaFormateada =
-                          "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}";
+                        final date = pago.fecha.toDate();
+                        String fechaFormateada =
+                            "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}";
 
-                      return ListTile(
-                        selected: isSelected,
-                        selectedTileColor: colorGrupo.withOpacity(0.05),
-                        onTap: () {
-                          if (_isSelectionMode) {
-                            _toggleSelection(pago);
-                          } else {
-                            showDialog(
-                              context: context,
-                              builder: (context) => DetailGroupDialog(
-                                pago: pago,
-                                color: colorGrupo,
-                                groupId: widget.groupModel.id,
-                              ),
-                            );
-                          }
-                        },
-                        onLongPress: () {
-                          if (!_isSelectionMode) {
-                            _enterSelectionMode(pago);
-                          }
-                        },
-                        leading: _isSelectionMode
-                            ? Checkbox(
-                                value: isSelected,
-                                activeColor: colorGrupo,
-                                onChanged: (_) => _toggleSelection(pago),
-                              )
-                            : CircleAvatar(
-                                backgroundColor: colorGrupo,
-                                child: const Icon(Icons.shopping_bag,
-                                    color: Colors.white),
-                              ),
-                        title: Text(
-                          pago.descripcion,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          "Pagado por: ${_obtenerNombre(pago.idPagador)}",
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                        trailing: _isSelectionMode
-                            ? null
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "${pago.cantidad.toStringAsFixed(2)} €",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: colorGrupo,
+                        return ListTile(
+                          selected: isSelected,
+                          selectedTileColor: colorGrupo.withOpacity(0.05),
+                          onTap: () {
+                            if (_isSelectionMode) {
+                              _toggleSelection(pago);
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (context) => DetailGroupDialog(
+                                  pago: pago,
+                                  color: colorGrupo,
+                                  groupId: widget.groupModel.id,
+                                ),
+                              );
+                            }
+                          },
+                          onLongPress: () {
+                            if (!_isSelectionMode) {
+                              _enterSelectionMode(pago);
+                            }
+                          },
+                          leading: _isSelectionMode
+                              ? Checkbox(
+                                  value: isSelected,
+                                  activeColor: colorGrupo,
+                                  onChanged: (_) => _toggleSelection(pago),
+                                )
+                              : CircleAvatar(
+                                  backgroundColor: colorGrupo,
+                                  child: const Icon(Icons.shopping_bag,
+                                      color: Colors.white),
+                                ),
+                          title: Text(
+                            pago.descripcion,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            "Pagado por: ${_obtenerNombre(pago.idPagador)}",
+                            style:
+                                TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                          trailing: _isSelectionMode
+                              ? null
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "${pago.cantidad.toStringAsFixed(2)} €",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: colorGrupo,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    fechaFormateada,
-                                    style: const TextStyle(
-                                        fontSize: 10, color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                      );
-                    },
+                                    Text(
+                                      fechaFormateada,
+                                      style: const TextStyle(
+                                          fontSize: 10, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                        );
+                      },
+                    ),
                   );
                 },
               ),

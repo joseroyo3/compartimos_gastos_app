@@ -3,6 +3,7 @@ import '../../../controllers/item_controller.dart';
 import '../../../models/group_model.dart';
 import '../../../models/item_model.dart';
 import '../../../widgets/appbar_custom.dart';
+import '../../../widgets/responsive_list_container.dart';
 import 'settings_group_screen.dart';
 
 class ShoppingListScreen extends StatefulWidget {
@@ -165,73 +166,77 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           // Lista con Datos
           final lista = snapshot.data!;
 
-          return ListView.separated(
-            padding: EdgeInsets.only(bottom: _isSelectionMode ? 20 : 80),
-            itemCount: lista.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = lista[index];
-              final isSelected = _selectedItems.contains(item.id);
-              final fecha = item.fechaCreacion.toDate();
-              final fechaStr = "${fecha.day}/${fecha.month}";
+          return ResponsiveListContainer(
+            child: ListView.separated(
+              padding: EdgeInsets.only(bottom: _isSelectionMode ? 20 : 80),
+              itemCount: lista.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final item = lista[index];
+                final isSelected = _selectedItems.contains(item.id);
+                final fecha = item.fechaCreacion.toDate();
+                final fechaStr = "${fecha.day}/${fecha.month}";
 
-              return ListTile(
-                selected: isSelected,
-                selectedTileColor: Color(widget.groupModel.colorValue).withOpacity(0.05),
-                onTap: () {
-                  if (_isSelectionMode) {
-                    _toggleSelection(item.id);
-                  }
-                },
-                onLongPress: () {
-                  if (!_isSelectionMode) {
-                    _enterSelectionMode(item.id);
-                  }
-                },
-                leading: _isSelectionMode
-                    ? Checkbox(
-                        value: isSelected,
-                        activeColor: colorGrupo,
-                        onChanged: (_) => _toggleSelection(item.id),
-                      )
-                    : CircleAvatar(
-                        backgroundColor: colorGrupo.withOpacity(0.1),
-                        child: Text(
-                          item.nombre.isNotEmpty
-                              ? item.nombre.substring(0, 1).toUpperCase()
-                              : "?",
-                          style: TextStyle(
-                              color: colorGrupo, fontWeight: FontWeight.bold),
+                return ListTile(
+                  selected: isSelected,
+                  selectedTileColor:
+                      Color(widget.groupModel.colorValue).withOpacity(0.05),
+                  onTap: () {
+                    if (_isSelectionMode) {
+                      _toggleSelection(item.id);
+                    }
+                  },
+                  onLongPress: () {
+                    if (!_isSelectionMode) {
+                      _enterSelectionMode(item.id);
+                    }
+                  },
+                  leading: _isSelectionMode
+                      ? Checkbox(
+                          value: isSelected,
+                          activeColor: colorGrupo,
+                          onChanged: (_) => _toggleSelection(item.id),
+                        )
+                      : CircleAvatar(
+                          backgroundColor: colorGrupo.withOpacity(0.1),
+                          child: Text(
+                            item.nombre.isNotEmpty
+                                ? item.nombre.substring(0, 1).toUpperCase()
+                                : "?",
+                            style: TextStyle(
+                                color: colorGrupo, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
-                title: Text(
-                  item.nombre,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text.rich(
-                  TextSpan(
-                    text: item.descripcion.isNotEmpty
-                        ? "${item.descripcion}\n"
-                        : "",
-                    children: [
-                      TextSpan(
-                        text:
-                            "Añadido por ${_obtenerNombre(item.creadoPor)} el $fechaStr",
-                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                      ),
-                    ],
+                  title: Text(
+                    item.nombre,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-                isThreeLine: item.descripcion.isNotEmpty,
-                trailing: _isSelectionMode
-                    ? null
-                    : IconButton(
-                        icon:
-                            const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () => _confirmarBorradoIndividual(item),
-                      ),
-              );
-            },
+                  subtitle: Text.rich(
+                    TextSpan(
+                      text: item.descripcion.isNotEmpty
+                          ? "${item.descripcion}\n"
+                          : "",
+                      children: [
+                        TextSpan(
+                          text:
+                              "Añadido por ${_obtenerNombre(item.creadoPor)} el $fechaStr",
+                          style:
+                              TextStyle(fontSize: 11, color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  isThreeLine: item.descripcion.isNotEmpty,
+                  trailing: _isSelectionMode
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.red),
+                          onPressed: () => _confirmarBorradoIndividual(item),
+                        ),
+                );
+              },
+            ),
           );
         },
       ),
