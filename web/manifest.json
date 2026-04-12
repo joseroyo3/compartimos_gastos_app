@@ -1,11 +1,11 @@
 {
-    "name": "compartimos_gastos",
-    "short_name": "compartimos_gastos",
+    "name": "Compartimos Gastos - Gestión de Cuentas en Grupo",
+    "short_name": "Gastos",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Compartimos Gastos App",
+    "background_color": "#ffffff",
+    "theme_color": "#30CBA1",
+    "description": "La app para gestionar gastos compartidos y deudas con amigos.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
