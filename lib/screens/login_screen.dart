@@ -349,9 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextButton(
                     onPressed: () =>
                         AuthDialogs.showRegister(context, _controller),
-                    style: TextButton.styleFrom(
-                      foregroundColor: isMobile ? Colors.white : Colors.blue.shade700,
-                    ),
+                    style: isMobile ? TextButton.styleFrom(foregroundColor: Colors.white) : null,
                     child: const Text("Regístrate",
                         style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
