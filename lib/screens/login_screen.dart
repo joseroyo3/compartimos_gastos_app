@@ -107,11 +107,12 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Full Screen Background
                 _buildHeroImage(isMobile: true),
-                
+
                 // Centered Glassmorphic Card
                 Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 40),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(30),
                       child: BackdropFilter(
@@ -120,7 +121,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.25),
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.white.withOpacity(0.2)),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.2)),
                           ),
                           padding: const EdgeInsets.all(24),
                           child: _buildLoginForm(isMobile: true),
@@ -204,19 +206,20 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             const LogoWidget(),
             const SizedBox(height: 8),
-            
             Text(
               "Inicia Sesión",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey.shade900,
+                    color: Colors.white,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              isMobile ? "Accede a tu cuenta" : "Introduce tus credenciales para continuar",
+              isMobile
+                  ? "Accede a tu cuenta"
+                  : "Introduce tus credenciales para continuar",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.blueGrey.shade600),
+              style: TextStyle(color: Colors.white.withOpacity(0.8)),
             ),
             const SizedBox(height: 24),
             TextFormField(
@@ -267,8 +270,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 24,
                         width: 24,
                         child: Checkbox(
-                          value: _rememberMe,
+                          value: _rememberMe, 
                           onChanged: (v) => _toggleRememberMe(v ?? false),
+                          side: const BorderSide(color: Colors.white, width: 2),
+                          checkColor: Colors.blue.shade700,
+                          activeColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -278,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Flexible(
                         child: Text(
                           'Recordar',
-                          style: TextStyle(fontSize: 13),
+                          style: TextStyle(fontSize: 13, color: Colors.white),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -311,7 +317,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.blue.shade700,
                     foregroundColor: Colors.white,
                     elevation: 4,
                     shadowColor: Colors.blue.withOpacity(0.5),
@@ -332,26 +337,27 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("¿Nuevo aquí?", style: TextStyle(fontSize: 14)),
+                  const Text("¿Nuevo aquí?", style: TextStyle(fontSize: 14, color: Colors.white)),
                   TextButton(
                     onPressed: () =>
                         AuthDialogs.showRegister(context, _controller),
-                    child: const Text("Regístrate", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text("Regístrate",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 children: const [
-                  Expanded(child: Divider()),
+                  Expanded(child: Divider(color: Colors.white24)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       "Social",
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
                     ),
                   ),
-                  Expanded(child: Divider()),
+                  Expanded(child: Divider(color: Colors.white24)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -366,24 +372,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       validate: false,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  _socialButton(
-                    icon: FontAwesomeIcons.facebook,
-                    color: const Color(0xff4267B2),
-                    onTap: () => _executeAuth(
-                      () => _controller.signInWithFacebook(),
-                      validate: false,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  _socialButton(
-                    icon: FontAwesomeIcons.apple,
-                    color: Colors.black,
-                    onTap: () => _executeAuth(
-                      () => _controller.signInWithApple(),
-                      validate: false,
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -393,7 +381,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   () => _controller.signInAnonymously(),
                   validate: false,
                 ),
-                label: const Text("Entrar como Invitado", style: TextStyle(fontSize: 13)),
+                label: const Text("Entrar como Invitado",
+                    style: TextStyle(fontSize: 13)),
               ),
             ],
           ],

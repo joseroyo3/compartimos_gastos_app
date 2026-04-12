@@ -67,8 +67,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 20),
                 ProfileActionButton(
                   icon: Icons.save_as,
-                  text: 'Registrarse',
+                  text: 'Registrarse con Email',
                   onPressed: () => _convertirInvitadoARegistrado(context),
+                ),
+                const SizedBox(height: 12),
+                ProfileActionButton(
+                   icon: Icons.g_mobiledata_rounded,
+                   text: 'Registrarse con Google',
+                   color: Colors.red.shade400,
+                   onPressed: () => _vincularConGoogle(context),
                 ),
               ],
             ),
@@ -128,6 +135,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.alternate_email,
                 text: 'Cambiar Email',
                 onPressed: () => _cambiarEmail(context),
+              ),
+              const SizedBox(height: 30),
+              // BOTÓN ELIMINAR CUENTA
+              ProfileActionButton(
+                icon: Icons.delete_forever,
+                text: 'Eliminar Cuenta',
+                color: Colors.red.shade900,
+                onPressed: () => _confirmarEliminacion(context),
               ),
             ],
           ),
@@ -373,6 +388,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
             }
           }
         },
+      ),
+    );
+  }
+
+  void _vincularConGoogle(BuildContext context) async {
+    final usuario = await _loginController.linkWithGoogle();
+
+    if (usuario != null) {
+      await _refreshUser();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('¡Cuenta de Google vinculada con éxito!')),
+        );
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al vincular. Puede que la cuenta Google ya exista.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _confirmarEliminacion(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("¿Eliminar cuenta?"),
+        content: const Text(
+          "Esta acción es irreversible. Se borrarán todos tus datos de usuario.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                // Cerramos el diálogo primero para evitar que se quede flotando
+                Navigator.pop(context);
+                
+                // Borramos la cuenta
+                await _loginController.deleteAccount();
+                
+                // NOTA: No hace falta navegar manualmente porque el StreamBuilder 
+                // de main.dart detectará que el usuario es null y nos llevará al Login.
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Error. Debes haber iniciado sesión recientemente para borrar tu cuenta.",
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Eliminar definitivamente"),
+          ),
+        ],
       ),
     );
   }

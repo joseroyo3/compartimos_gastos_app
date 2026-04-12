@@ -24,4 +24,9 @@ class UserController {
     // .update solo modifica los campos que le pasas en el mapa, sin modificar el resto
     await firestore.collection('usuarios').doc(uid).update(datosAActualizar);
   }
+
+  // Función para ELIMINAR
+  Future<void> eliminarUsuario(String uid) async {
+    await firestore.collection('usuarios').doc(uid).delete();
+  }
 }

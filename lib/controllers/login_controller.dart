@@ -52,6 +52,11 @@ class LoginController {
   // LOGOUT
   Future<void> logout() async {
     await _auth.signOut();
+    try {
+      await GoogleSignIn().signOut();
+    } catch (e) {
+      print("Error en logout social: $e");
+    }
   }
 
   // OBTENER USUARIO ACTUAL
@@ -132,7 +137,9 @@ class LoginController {
   // GOOGLE SIGN IN
   Future<User?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return null;
 
       final GoogleSignInAuthentication googleAuth =
@@ -158,6 +165,7 @@ class LoginController {
   // FACEBOOK SIGN IN
   Future<User?> signInWithFacebook() async {
     try {
+      await FacebookAuth.instance.logOut();
       final LoginResult result = await FacebookAuth.instance.login();
       if (result.status != LoginStatus.success) return null;
 
@@ -229,5 +237,56 @@ class LoginController {
     final bytes = utf8.encode(input);
     final digest = sha256.convert(bytes);
     return digest.toString();
+  }
+
+  // VINCULAR GOOGLE (Para pasar de Anónimo a Google)
+  Future<User?> linkWithGoogle() async {
+    try {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential =
+          await _auth.currentUser?.linkWithCredential(credential);
+      final user = userCredential?.user;
+
+      if (user != null) {
+        // Actualizamos en Firestore con los datos de Google
+        await UserController().actualizarUsuario(user.uid, {
+          'email': user.email,
+          'nombre': user.displayName,
+          'fotoPerfil': user.photoURL,
+        });
+      }
+      return user;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'credential-already-in-use') {
+        print("Esta cuenta de Google ya está vinculada a otro usuario.");
+      }
+      return null;
+    } catch (e) {
+      print("Error vinculando con Google: $e");
+      return null;
+    }
+  }
+
+  // ELIMINAR CUENTA
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      // 1. Eliminar rastro en Firestore
+      await UserController().eliminarUsuario(user.uid);
+      
+      // 2. Eliminar de Firebase Auth
+      await user.delete();
+    }
   }
 }

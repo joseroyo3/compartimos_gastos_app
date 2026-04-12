@@ -12,7 +12,20 @@
           "package_name": "josebyteando.compartimosgastos.compartimos_gastos"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1029109934862-6ektvl0m71icne6vg5lf5p0crjt4s8p2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "josebyteando.compartimosgastos.compartimos_gastos",
+            "certificate_hash": "88c413e5570e1dcf541c9d524e52a52fb60fabb4"
+          }
+        },
+        {
+          "client_id": "1029109934862-n7uifpid7508a62nu2loe573hus0bo21.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCkjvICetJbIaSLirQqB7eIPCo6A0Vxw-k"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1029109934862-n7uifpid7508a62nu2loe573hus0bo21.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1029109934862-7jk38qtasbsqanr9inbf5fdu8nk3d831.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "josebyteando.compartimosgastos.compartimosGastos"
+              }
+            }
+          ]
         }
       }
     }
