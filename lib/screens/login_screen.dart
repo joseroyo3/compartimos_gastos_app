@@ -197,6 +197,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginForm({required bool isMobile}) {
+    final Color textColor = isMobile ? Colors.white : Colors.black87;
+    final Color subTextColor = isMobile ? Colors.white.withOpacity(0.8) : Colors.black54;
+    final Color dividerColor = isMobile ? Colors.white24 : Colors.black12;
+
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 400),
       child: Form(
@@ -210,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
               "Inicia Sesión",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: textColor,
                   ),
             ),
             const SizedBox(height: 8),
@@ -219,22 +223,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? "Accede a tu cuenta"
                   : "Introduce tus credenciales para continuar",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(0.8)),
+              style: TextStyle(color: subTextColor),
             ),
             const SizedBox(height: 24),
             TextFormField(
               controller: _emailCtrl,
+              style: TextStyle(color: isMobile ? Colors.black : Colors.black87),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.8),
+                fillColor: isMobile ? Colors.white.withOpacity(0.9) : Colors.grey[100],
                 labelText: "Email",
+                labelStyle: TextStyle(color: isMobile ? Colors.blueGrey : Colors.grey[700]),
                 prefixIcon: const Icon(Icons.email_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: isMobile ? Colors.transparent : Colors.grey.shade300),
                 ),
               ),
               validator: (v) => v!.isEmpty ? 'Requerido' : null,
@@ -243,17 +249,19 @@ class _LoginScreenState extends State<LoginScreen> {
             TextFormField(
               controller: _passCtrl,
               obscureText: true,
+              style: TextStyle(color: isMobile ? Colors.black : Colors.black87),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.8),
+                fillColor: isMobile ? Colors.white.withOpacity(0.9) : Colors.grey[100],
                 labelText: "Contraseña",
+                labelStyle: TextStyle(color: isMobile ? Colors.blueGrey : Colors.grey[700]),
                 prefixIcon: const Icon(Icons.lock_outline),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: isMobile ? Colors.transparent : Colors.grey.shade300),
                 ),
               ),
               validator: (v) => v!.isEmpty ? 'Requerido' : null,
@@ -272,19 +280,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Checkbox(
                           value: _rememberMe, 
                           onChanged: (v) => _toggleRememberMe(v ?? false),
-                          side: const BorderSide(color: Colors.white, width: 2),
+                          side: BorderSide(color: isMobile ? Colors.white : Colors.grey, width: 2),
                           checkColor: Colors.blue.shade700,
-                          activeColor: Colors.white,
+                          activeColor: isMobile ? Colors.white : Colors.blue.shade700,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Flexible(
+                      Flexible(
                         child: Text(
                           'Recordar',
-                          style: TextStyle(fontSize: 13, color: Colors.white),
+                          style: TextStyle(fontSize: 13, color: textColor),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -337,10 +345,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("¿Nuevo aquí?", style: TextStyle(fontSize: 14, color: Colors.white)),
+                  Text("¿Nuevo aquí?", style: TextStyle(fontSize: 14, color: textColor)),
                   TextButton(
                     onPressed: () =>
                         AuthDialogs.showRegister(context, _controller),
+                    style: TextButton.styleFrom(
+                      foregroundColor: isMobile ? Colors.white : Colors.blue.shade700,
+                    ),
                     child: const Text("Regístrate",
                         style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
@@ -348,16 +359,16 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               Row(
-                children: const [
-                  Expanded(child: Divider(color: Colors.white24)),
+                children: [
+                  Expanded(child: Divider(color: dividerColor)),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       "Social",
-                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                      style: TextStyle(color: subTextColor, fontSize: 12),
                     ),
                   ),
-                  Expanded(child: Divider(color: Colors.white24)),
+                  Expanded(child: Divider(color: dividerColor)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -380,6 +391,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () => _executeAuth(
                   () => _controller.signInAnonymously(),
                   validate: false,
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: isMobile ? Colors.white : Colors.blueGrey,
                 ),
                 label: const Text("Entrar como Invitado",
                     style: TextStyle(fontSize: 13)),
