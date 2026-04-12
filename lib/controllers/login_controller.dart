@@ -5,6 +5,7 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart'; // Para kIsWeb
 
 import '../models/user_model.dart';
 
@@ -53,7 +54,12 @@ class LoginController {
   Future<void> logout() async {
     await _auth.signOut();
     try {
-      await GoogleSignIn().signOut();
+      final googleSignIn = GoogleSignIn(
+        clientId: kIsWeb
+            ? '1029109934862-n7uifpid7508a62nu2loe573hus0bo21.apps.googleusercontent.com'
+            : null,
+      );
+      await googleSignIn.signOut();
     } catch (e) {
       print("Error en logout social: $e");
     }
@@ -137,8 +143,16 @@ class LoginController {
   // GOOGLE SIGN IN
   Future<User?> signInWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn();
-      await googleSignIn.signOut();
+      final googleSignIn = GoogleSignIn(
+        clientId: kIsWeb
+            ? '1029109934862-n7uifpid7508a62nu2loe573hus0bo21.apps.googleusercontent.com'
+            : null,
+      );
+      
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return null;
 
@@ -242,8 +256,16 @@ class LoginController {
   // VINCULAR GOOGLE (Para pasar de Anónimo a Google)
   Future<User?> linkWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn();
-      await googleSignIn.signOut();
+      final googleSignIn = GoogleSignIn(
+        clientId: kIsWeb
+            ? '1029109934862-n7uifpid7508a62nu2loe573hus0bo21.apps.googleusercontent.com'
+            : null,
+      );
+      
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return null;
 
