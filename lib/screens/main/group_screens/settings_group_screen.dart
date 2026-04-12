@@ -252,18 +252,11 @@ class _SettingsGroupScreenState extends State<SettingsGroupScreen> {
           }),
           const Divider(height: 1),
           _buildActionListTile(
-            icon: Icons.person_add_alt_1_rounded,
-            title: "Crear miembro temporal",
-            subtitle: "Para personas sin la app",
-            color: Colors.orange,
-            onTap: _mostrarDialogoNuevoInvitado,
-          ),
-          _buildActionListTile(
-            icon: Icons.alternate_email_rounded,
-            title: "Vincular por Email",
-            subtitle: "Usuarios con cuenta registrada",
-            color: Colors.green,
-            onTap: _mostrarDialogoAgregarMiembro,
+            icon: Icons.person_add_rounded,
+            title: "Añadir nuevo miembro",
+            subtitle: "Vincular por email o crear invitado",
+            color: Colors.teal,
+            onTap: _mostrarDialogoNuevoMiembro,
           ),
         ],
       ),
@@ -410,118 +403,96 @@ class _SettingsGroupScreenState extends State<SettingsGroupScreen> {
     );
   }
 
-  void _mostrarDialogoAgregarMiembro() {
-    final emailController = TextEditingController();
+  void _mostrarDialogoNuevoMiembro() {
+    final controller = TextEditingController();
+    bool esEmail = true;
     final messenger = ScaffoldMessenger.of(context);
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("Vincular Usuario"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Añade a alguien que ya tenga la cuenta creada introduciendo su email."),
-            const SizedBox(height: 20),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: "Email del usuario",
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Añadir Miembro"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text("Email"),
+                    icon: Icon(Icons.alternate_email),
+                  ),
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text("Temporal"),
+                    icon: Icon(Icons.person_outline),
+                  ),
+                ],
+                selected: {esEmail},
+                onSelectionChanged: (value) {
+                  setDialogState(() {
+                    esEmail = value.first;
+                    controller.clear();
+                  });
+                },
               ),
-              keyboardType: TextInputType.emailAddress,
+              const SizedBox(height: 24),
+              Text(
+                esEmail
+                    ? "Busca a un usuario que ya tenga la app instalada."
+                    : "Crea a alguien que no use la app para anotar sus gastos.",
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: esEmail ? "Email del usuario" : "Nombre del invitado",
+                  prefixIcon: Icon(esEmail ? Icons.email_outlined : Icons.person),
+                  border: const OutlineInputBorder(),
+                  hintText: esEmail ? "ejemplo@gmail.com" : "Juan Pérez",
+                ),
+                keyboardType: esEmail ? TextInputType.emailAddress : TextInputType.text,
+                textCapitalization: esEmail ? TextCapitalization.none : TextCapitalization.words,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancelar"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final input = controller.text.trim();
+                if (input.isEmpty) return;
+
+                Navigator.pop(dialogContext);
+                setState(() => _isLoading = true);
+
+                try {
+                  if (esEmail) {
+                    await _groupController.agregarMiembroPorEmail(_currentGroup.id, input);
+                    messenger.showSnackBar(const SnackBar(content: Text("Usuario vinculado")));
+                  } else {
+                    await _groupController.agregarMiembroInvitado(_currentGroup.id, input);
+                    messenger.showSnackBar(const SnackBar(content: Text("Miembro temporal creado")));
+                  }
+                  await _refreshGroup();
+                } catch (e) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                  );
+                } finally {
+                  if (mounted) setState(() => _isLoading = false);
+                }
+              },
+              child: Text(esEmail ? "Añadir por Email" : "Crear Invitado"),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Cancelar"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final email = emailController.text.trim();
-              if (email.isEmpty) return;
-              
-              Navigator.pop(dialogContext);
-              setState(() => _isLoading = true);
-              
-              try {
-                await _groupController.agregarMiembroPorEmail(_currentGroup.id, email);
-                await _refreshGroup();
-                messenger.showSnackBar(
-                  const SnackBar(content: Text("Usuario añadido")),
-                );
-              } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-                );
-              } finally {
-                if (mounted) setState(() => _isLoading = false);
-              }
-            },
-            child: const Text("Agregar"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarDialogoNuevoInvitado() {
-    final nameController = TextEditingController();
-    final messenger = ScaffoldMessenger.of(context);
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("Miembro Temporal"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Ideal para personas que no usan la app directamente."),
-            const SizedBox(height: 20),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Nombre",
-                prefixIcon: Icon(Icons.person_outline),
-                border: OutlineInputBorder(),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Cancelar"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final nombre = nameController.text.trim();
-              if (nombre.isEmpty) return;
-
-              Navigator.pop(dialogContext);
-              setState(() => _isLoading = true);
-
-              try {
-                await _groupController.agregarMiembroInvitado(_currentGroup.id, nombre);
-                await _refreshGroup();
-                messenger.showSnackBar(
-                  const SnackBar(content: Text("Miembro temporal creado")),
-                );
-              } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                );
-              } finally {
-                if (mounted) setState(() => _isLoading = false);
-              }
-            },
-            child: const Text("Crear"),
-          ),
-        ],
       ),
     );
   }
