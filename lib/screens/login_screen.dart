@@ -202,11 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isMobile) ...[
-              const LogoWidget(),
-              const SizedBox(height: 12),
-            ] else 
-              const LogoWidget(),
+            const LogoWidget(),
+            const SizedBox(height: 8),
             
             Text(
               "Inicia Sesión",
