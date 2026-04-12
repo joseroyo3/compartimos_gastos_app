@@ -1,6 +1,7 @@
 import 'package:compartimos_gastos/widgets/logo_widget.dart';
 import 'package:compartimos_gastos/widgets/login_screen/auth_dialogs.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/login_controller.dart';
 
@@ -146,6 +147,50 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text('¿Olvidaste tu contraseña?'),
                       ),
                       const SizedBox(height: 30),
+                      Row(
+                        children: const [
+                          Expanded(child: Divider()),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              "O continúa con",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                          Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _socialButton(
+                            icon: FontAwesomeIcons.google,
+                            color: Colors.red.shade400,
+                            onTap: () => _executeAuth(
+                              () => _controller.signInWithGoogle(),
+                              validate: false,
+                            ),
+                          ),
+                          _socialButton(
+                            icon: FontAwesomeIcons.facebook,
+                            color: Colors.blue.shade800,
+                            onTap: () => _executeAuth(
+                              () => _controller.signInWithFacebook(),
+                              validate: false,
+                            ),
+                          ),
+                          _socialButton(
+                            icon: FontAwesomeIcons.apple,
+                            color: Colors.black,
+                            onTap: () => _executeAuth(
+                              () => _controller.signInWithApple(),
+                              validate: false,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
                       SizedBox(
                         child: TextButton(
                           onPressed: () => _executeAuth(
@@ -161,6 +206,37 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _socialButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: FaIcon(
+          icon,
+          color: color,
+          size: 24,
         ),
       ),
     );

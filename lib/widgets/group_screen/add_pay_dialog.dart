@@ -9,8 +9,9 @@ import '../../models/pay_model.dart';
 
 class AddExpenseDialog extends StatefulWidget {
   final GroupModel groupModel;
+  final PayModel? existingPay;
 
-  const AddExpenseDialog({super.key, required this.groupModel});
+  const AddExpenseDialog({super.key, required this.groupModel, this.existingPay});
 
   @override
   State<AddExpenseDialog> createState() => _AddExpenseDialogState();
@@ -29,14 +30,21 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   @override
   void initState() {
     super.initState();
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUid != null &&
-        widget.groupModel.miembros.containsKey(currentUid)) {
-      _idPagadorSeleccionado = currentUid;
+    if (widget.existingPay != null) {
+      _descripcionController.text = widget.existingPay!.descripcion;
+      _cantidadController.text = widget.existingPay!.cantidad.toStringAsFixed(2);
+      _idPagadorSeleccionado = widget.existingPay!.idPagador;
+      _idsInvolucrados = widget.existingPay!.distribucion.keys.toList();
     } else {
-      _idPagadorSeleccionado = widget.groupModel.miembros.keys.first;
+      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUid != null &&
+          widget.groupModel.miembros.containsKey(currentUid)) {
+        _idPagadorSeleccionado = currentUid;
+      } else {
+        _idPagadorSeleccionado = widget.groupModel.miembros.keys.first;
+      }
+      _idsInvolucrados = widget.groupModel.miembros.keys.toList();
     }
-    _idsInvolucrados = widget.groupModel.miembros.keys.toList();
   }
 
   @override
@@ -44,7 +52,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
     final Color colorGrupo = Color(widget.groupModel.colorValue);
 
     return AlertDialog(
-      title: const Text("Nuevo Gasto"),
+      title: Text(widget.existingPay != null ? "Editar Gasto" : "Nuevo Gasto"),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
@@ -110,7 +118,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
 
                 // QUIÉN PAGÓ -------------------------------------
                 DropdownButtonFormField<String>(
-                  initialValue: _idPagadorSeleccionado,
+                  value: _idPagadorSeleccionado,
                   isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Pagado por',
@@ -182,6 +190,16 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                       style: TextStyle(color: Colors.orange, fontSize: 12),
                     ),
                   ),
+                
+                if (widget.existingPay != null) ...[
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  TextButton.icon(
+                    onPressed: _estaGuardando ? null : _confirmarEliminar,
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    label: const Text("Eliminar Gasto", style: TextStyle(color: Colors.red)),
+                  ),
+                ],
               ],
             ),
           ),
@@ -224,16 +242,29 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
       final mapDistribucion =
           controller.calcularDistribucion(cantidad, _idsInvolucrados);
 
-      final nuevoPago = PayModel(
-        id: '',
-        descripcion: _descripcionController.text.trim(),
-        fecha: Timestamp.now(),
-        cantidad: cantidad,
-        idPagador: _idPagadorSeleccionado!,
-        distribucion: mapDistribucion,
-      );
+      if (widget.existingPay != null) {
+        // MODO EDICIÓN
+        final pagoEditado = widget.existingPay!.copyWith(
+          descripcion: _descripcionController.text.trim(),
+          cantidad: cantidad,
+          idPagador: _idPagadorSeleccionado!,
+          distribucion: mapDistribucion,
+        );
 
-      await controller.crearPago(widget.groupModel.id, nuevoPago);
+        await controller.editarPago(widget.groupModel.id, pagoEditado);
+      } else {
+        // MODO CREACIÓN
+        final nuevoPago = PayModel(
+          id: '',
+          descripcion: _descripcionController.text.trim(),
+          fecha: Timestamp.now(),
+          cantidad: cantidad,
+          idPagador: _idPagadorSeleccionado!,
+          distribucion: mapDistribucion,
+        );
+
+        await controller.crearPago(widget.groupModel.id, nuevoPago);
+      }
 
       if (mounted) {
         Navigator.pop(context);
@@ -241,6 +272,41 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
     } catch (e) {
       print("Error guardando gasto: $e");
       setState(() => _estaGuardando = false);
+    }
+  }
+
+  void _confirmarEliminar() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Eliminar gasto"),
+        content: const Text("¿Estás seguro de que quieres eliminar este gasto?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Eliminar"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _estaGuardando = true);
+      try {
+        final controller = PayController();
+        await controller.eliminarPago(widget.groupModel.id, widget.existingPay!);
+        if (mounted) {
+          Navigator.pop(context); // Cierra el AddExpenseDialog
+        }
+      } catch (e) {
+        print("Error eliminando gasto: $e");
+        setState(() => _estaGuardando = false);
+      }
     }
   }
 }

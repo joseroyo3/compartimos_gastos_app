@@ -12,21 +12,22 @@ class PayController {
     final paymentsRef = groupRef.collection('pagos');
 
     await firestore.runTransaction((transaction) async {
+      // 1. OBTENER DATOS PRIMERO (Reads)
       final groupSnap = await transaction.get(groupRef);
       if (!groupSnap.exists) return;
 
-      final GroupModel group = GroupModel.fromFirestore(groupSnap);
+      // Obtenemos todos los pagos para recalcular todo
+      // Nota: get() en una colección no participa del bloqueo de la transacción
+      // pero debe llamarse antes de cualquier escritura (set/update/delete) en algunas versiones
+      final allPaymentsSnap = await groupRef.collection('pagos').get();
 
-      // 1. Guardar el pago primero
+      // 2. REALIZAR ESCRITURAS (Writes)
       final newPaymentDoc = paymentsRef.doc();
       transaction.set(newPaymentDoc, pago.toMap());
 
-      // 2. Recalcular netos desde cero para asegurar consistencia total
-      // (Es más seguro que acumular sobre el mapa anterior si éste pudiera estar corrupto)
-      final allPaymentsSnap = await groupRef.collection('pagos').get();
       Map<String, double> nuevosNetos = {};
 
-      // Sumar todos los pagos existentes + el nuevo
+      // Sumar todos los pagos existentes
       for (var doc in allPaymentsSnap.docs) {
         final p = PayModel.fromFirestore(doc);
         nuevosNetos[p.idPagador] = (nuevosNetos[p.idPagador] ?? 0) + p.cantidad;
@@ -35,7 +36,7 @@ class PayController {
         });
       }
 
-      // Añadir el pago actual que estamos procesando en la transacción
+      // Añadir el pago actual que estamos procesando
       nuevosNetos[pago.idPagador] =
           (nuevosNetos[pago.idPagador] ?? 0) + pago.cantidad;
       pago.distribucion.forEach((uid, cant) {
@@ -141,12 +142,14 @@ class PayController {
     final groupRef = firestore.collection('grupos').doc(groupId);
 
     await firestore.runTransaction((transaction) async {
+      // 1. LEER PRIMERO
+      final allPaymentsSnap = await groupRef.collection('pagos').get();
+      
+      // 2. BORRAR Y ACTUALIZAR
       for (var pago in pagos) {
         transaction.delete(groupRef.collection('pagos').doc(pago.id));
       }
 
-      // Forzamos recalculo total tras borrar masivamente
-      final allPaymentsSnap = await groupRef.collection('pagos').get();
       Map<String, double> nuevosNetos = {};
 
       for (var doc in allPaymentsSnap.docs) {
@@ -162,6 +165,45 @@ class PayController {
 
       List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
 
+      transaction.update(groupRef, {
+        'netos': nuevosNetos,
+        'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),
+      });
+    });
+  }
+
+  // EDITAR PAGO
+  Future<void> editarPago(String groupId, PayModel pagoEditado) async {
+    final groupRef = firestore.collection('grupos').doc(groupId);
+    final paymentRef = groupRef.collection('pagos').doc(pagoEditado.id);
+
+    await firestore.runTransaction((transaction) async {
+      // 1. Leer primero (Reads before Writes)
+      final allPaymentsSnap = await groupRef.collection('pagos').get();
+
+      // 2. Actualizar el pago (Write)
+      transaction.update(paymentRef, pagoEditado.toMap());
+
+      Map<String, double> nuevosNetos = {};
+
+      for (var doc in allPaymentsSnap.docs) {
+        PayModel p;
+        if (doc.id == pagoEditado.id) {
+          p = pagoEditado;
+        } else {
+          p = PayModel.fromFirestore(doc);
+        }
+
+        nuevosNetos[p.idPagador] = (nuevosNetos[p.idPagador] ?? 0) + p.cantidad;
+        p.distribucion.forEach((uid, cant) {
+          nuevosNetos[uid] = (nuevosNetos[uid] ?? 0) - cant;
+        });
+      }
+
+      // 3. Simplificar
+      List<BalanceModel> nuevosBalances = _calcularSimplificacion(nuevosNetos);
+
+      // 4. Guardar en el documento central
       transaction.update(groupRef, {
         'netos': nuevosNetos,
         'balancesSimplificados': nuevosBalances.map((b) => b.toMap()).toList(),

@@ -1,5 +1,10 @@
 import 'package:compartimos_gastos/controllers/user_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 import '../models/user_model.dart';
 
@@ -122,5 +127,107 @@ class LoginController {
       print("Error vinculando cuenta: $e");
       return null;
     }
+  }
+
+  // GOOGLE SIGN IN
+  Future<User?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        await _asegurarUsuarioEnFirestore(user);
+      }
+      return user;
+    } catch (e) {
+      print("Error Google: $e");
+      return null;
+    }
+  }
+
+  // FACEBOOK SIGN IN
+  Future<User?> signInWithFacebook() async {
+    try {
+      final LoginResult result = await FacebookAuth.instance.login();
+      if (result.status != LoginStatus.success) return null;
+
+      final OAuthCredential credential =
+          FacebookAuthProvider.credential(result.accessToken!.token);
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        await _asegurarUsuarioEnFirestore(user);
+      }
+      return user;
+    } catch (e) {
+      print("Error Facebook: $e");
+      return null;
+    }
+  }
+
+  // APPLE SIGN IN
+  Future<User?> signInWithApple() async {
+    try {
+      final rawNonce = _generateNonce();
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: _sha256ofString(rawNonce),
+      );
+
+      final OAuthCredential credential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        await _asegurarUsuarioEnFirestore(user);
+      }
+      return user;
+    } catch (e) {
+      print("Error Apple: $e");
+      return null;
+    }
+  }
+
+  // AUXILIARES
+  Future<void> _asegurarUsuarioEnFirestore(User user) async {
+    final userController = UserController();
+    final usuarioExistente = await userController.obtenerUsuario(user.uid);
+
+    if (usuarioExistente == null) {
+      UserModel nuevoUsuario = UserModel.fromFirebase(user);
+      await userController.crearUsuario(nuevoUsuario);
+    }
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    final random = DateTime.now().millisecondsSinceEpoch;
+    return List.generate(
+        length, (index) => charset[random % charset.length]).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 }

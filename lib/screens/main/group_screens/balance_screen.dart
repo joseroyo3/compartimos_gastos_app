@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../controllers/pay_controller.dart';
 import '../../../models/balance_model.dart';
 import '../../../models/group_model.dart';
+import '../../../models/pay_model.dart';
 import '../../../widgets/appbar_custom.dart';
 import '../../../controllers/themes_controller.dart';
 import '../../../widgets/responsive_list_container.dart';
@@ -69,28 +70,34 @@ class BalanceScreen extends StatelessWidget {
 
             return Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    "Pagos pendientes para cuadrar cuentas",
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-
-                // Lista de Balances
                 Expanded(
-                  child: ResponsiveListContainer(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: balances.length,
-                      itemBuilder: (context, index) {
-                        final balance = balances[index];
-                        return _buildBalanceCard(balance, primaryColor);
-                      },
-                    ),
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Text(
+                          "Pagos pendientes para cuadrar cuentas",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+
+                      // Lista de Balances
+                      ...balances.map((b) => _buildBalanceCard(b, primaryColor)),
+
+                      const SizedBox(height: 20),
+                      const Divider(),
+                      const SizedBox(height: 10),
+
+                      // SECCIÓN GASTOS INDIVIDUALES
+                      _buildGastosIndividualesSection(primaryColor),
+
+                      const SizedBox(height: 40),
+                    ],
                   ),
                 ),
               ],
@@ -101,27 +108,36 @@ class BalanceScreen extends StatelessWidget {
     );
   }
 
-  // idget para cuando no hay deudas -------------------------
+  // Widget para cuando no hay deudas -------------------------
   Widget _buildEmptyState(Color color) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.check_circle_outline,
-              size: 100, color: color.withOpacity(0.5)),
-          const SizedBox(height: 20),
-          Text(
-            "¡Cuentas saldadas!",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: color,
+    return Column(
+      children: [
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle_outline,
+                    size: 80, color: color.withOpacity(0.5)),
+                const SizedBox(height: 15),
+                Text(
+                  "¡Cuentas saldadas!",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                const Text("Nadie debe nada a nadie."),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          const Text("Nadie debe nada a nadie en este grupo."),
-        ],
-      ),
+        ),
+        const Divider(),
+        _buildGastosIndividualesSection(color),
+        const SizedBox(height: 30),
+      ],
     );
   }
 
@@ -233,7 +249,111 @@ class BalanceScreen extends StatelessWidget {
     return "Usuario";
   }
 
-  // Helper para sacar las iniciales
+  // Sección de gastos que NO generan deuda (individuales)
+  Widget _buildGastosIndividualesSection(Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(Icons.person_pin_circle_outlined, color: color, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                "Gastos Individuales",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            "Suma de gastos personales que no generan deuda.",
+            style: TextStyle(fontSize: 11, color: Colors.grey),
+          ),
+        ),
+        const SizedBox(height: 10),
+        StreamBuilder<List<PayModel>>(
+          stream: _payController.obtenerPagosDelGrupo(groupModel.id),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Center(
+                    child: Text("Sin gastos individuales",
+                        style: TextStyle(fontSize: 12, color: Colors.grey))),
+              );
+            }
+
+            final pagos = snapshot.data!;
+            final Map<String, double> totales = {};
+
+            // Inicializar todos los miembros a 0
+            for (var uid in groupModel.miembros.keys) {
+              totales[uid] = 0;
+            }
+
+            // Sumar solo si es individual (un solo involucrado y es el pagador)
+            for (var p in pagos) {
+              if (p.distribucion.length == 1 &&
+                  p.distribucion.containsKey(p.idPagador)) {
+                totales[p.idPagador] = (totales[p.idPagador] ?? 0) + p.cantidad;
+              }
+            }
+
+            // Filtrar y ordenar los que tienen algo (o mostrar todos si se prefiere)
+            final listaTotales = totales.entries.where((e) => e.value > 0).toList();
+            listaTotales.sort((a, b) => b.value.compareTo(a.value));
+
+            if (listaTotales.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Center(
+                    child: Text("No hay gastos registrados como individuales",
+                        style: TextStyle(fontSize: 12, color: Colors.grey))),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                elevation: 0,
+                color: color.withOpacity(0.03),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: color.withOpacity(0.1))),
+                child: Column(
+                  children: listaTotales.map((entry) {
+                    final nombre = _obtenerNombre(entry.key);
+                    return ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 12,
+                        backgroundColor: color.withOpacity(0.1),
+                        child: Text(nombre[0].toUpperCase(),
+                            style: TextStyle(fontSize: 10, color: color)),
+                      ),
+                      title: Text(nombre,
+                          style: const TextStyle(fontWeight: FontWeight.w500)),
+                      trailing: Text(
+                        "${entry.value.toStringAsFixed(2)} €",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.grey[700]),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // Helper para saca las iniciales
   String _getInitials(String name) {
     if (name.isEmpty) return "";
     List<String> parts = name.trim().split(" ");

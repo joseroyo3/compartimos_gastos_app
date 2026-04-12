@@ -6,7 +6,6 @@ import '../../../models/group_model.dart';
 import '../../../models/pay_model.dart';
 import '../../../widgets/appbar_custom.dart';
 import '../../../widgets/group_screen/add_pay_dialog.dart';
-import '../../../widgets/group_screen/detail_group_dialog.dart';
 import '../../../widgets/responsive_list_container.dart';
 
 class GroupScreen extends StatefulWidget {
@@ -198,10 +197,9 @@ class _GroupScreenState extends State<GroupScreen> {
                             } else {
                               showDialog(
                                 context: context,
-                                builder: (context) => DetailGroupDialog(
-                                  pago: pago,
-                                  color: colorGrupo,
-                                  groupId: widget.groupModel.id,
+                                builder: (context) => AddExpenseDialog(
+                                  groupModel: widget.groupModel,
+                                  existingPay: pago,
                                 ),
                               );
                             }
