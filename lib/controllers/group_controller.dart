@@ -211,4 +211,88 @@ class GroupController {
       'grupos': FieldValue.arrayRemove([groupId])
     });
   }
+
+  // AGREGAR MIEMBRO POR EMAIL
+  Future<void> agregarMiembroPorEmail(String groupId, String email) async {
+    // 1. Buscar usuario por email
+    final userSnap = await firestore
+        .collection('usuarios')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (userSnap.docs.isEmpty) {
+      throw Exception("No se encontró ningún usuario con ese email.");
+    }
+
+    final userData = userSnap.docs.first.data();
+    final String uid = userSnap.docs.first.id;
+    final String nombre = userData['nombre'] ?? email.split('@')[0];
+
+    // 2. Añadir al grupo
+    await firestore.collection('grupos').doc(groupId).set({
+      'miembros': {uid: nombre}
+    }, SetOptions(merge: true));
+
+    // 3. Añadir grupo al perfil del usuario
+    await firestore.collection('usuarios').doc(uid).update({
+      'grupos': FieldValue.arrayUnion([groupId])
+    });
+  }
+
+  // ELIMINAR MIEMBRO
+  Future<void> eliminarMiembro(String groupId, String uid) async {
+    // 1. Quitar del mapa de miembros del grupo
+    await firestore.collection('grupos').doc(groupId).update({
+      'miembros.$uid': FieldValue.delete()
+    });
+
+    // 2. Quitar el grupo del perfil del usuario (SOLO SI NO ES GUEST)
+    // Los miembros temporales (guest_...) no tienen documento en la colección 'usuarios'
+    if (!uid.startsWith("guest_")) {
+      await firestore.collection('usuarios').doc(uid).update({
+        'grupos': FieldValue.arrayRemove([groupId])
+      });
+    }
+  }
+
+  // AGREGAR MIEMBRO INVITADO (Sin cuenta)
+  Future<void> agregarMiembroInvitado(String groupId, String nombre) async {
+    final String guestId = "guest_${DateTime.now().millisecondsSinceEpoch}";
+
+    await firestore.collection('grupos').doc(groupId).set({
+      'miembros': {guestId: nombre}
+    }, SetOptions(merge: true));
+  }
+
+  // STREAM de un solo grupo (Para ver cambios en tiempo real)
+  Stream<GroupModel?> obtenerDetallesGrupoStream(String groupId) {
+    return firestore.collection('grupos').doc(groupId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return GroupModel.fromFirestore(doc);
+    });
+  }
+
+  // COMPROBAR SI TIENE GASTOS (Para evitar borrar miembros con deuda/pagos)
+  Future<bool> tieneGastosAsociados(String groupId, String uid) async {
+    final groupRef = firestore.collection('grupos').doc(groupId);
+
+    // 1. ¿Ha pagado algo?
+    final pagosRealizados = await groupRef
+        .collection('pagos')
+        .where('idPagador', isEqualTo: uid)
+        .limit(1)
+        .get();
+
+    if (pagosRealizados.docs.isNotEmpty) return true;
+
+    // 2. ¿Está en alguna distribución?
+    final pagosInvolucrado = await groupRef
+        .collection('pagos')
+        .where('distribucion.$uid', isGreaterThanOrEqualTo: 0)
+        .limit(1)
+        .get();
+
+    return pagosInvolucrado.docs.isNotEmpty;
+  }
 }

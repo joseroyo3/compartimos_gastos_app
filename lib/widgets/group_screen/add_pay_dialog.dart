@@ -125,15 +125,27 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     prefixIcon: Icon(Icons.person),
                     border: OutlineInputBorder(),
                   ),
-                  items: widget.groupModel.miembros.entries.map((entry) {
-                    return DropdownMenuItem(
-                      value: entry.key,
-                      child: Text(
-                        entry.value,
-                        overflow: TextOverflow.ellipsis,
+                  items: [
+                    ...widget.groupModel.miembros.entries.map((entry) {
+                      return DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(
+                          entry.value,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }),
+                    // FALLBACK: Si el pagador ya no está en el grupo (fue eliminado antes de limpiar gastos)
+                    if (_idPagadorSeleccionado != null &&
+                        !widget.groupModel.miembros.containsKey(_idPagadorSeleccionado))
+                      DropdownMenuItem(
+                        value: _idPagadorSeleccionado,
+                        child: const Text(
+                          "Usuario eliminado",
+                          style: TextStyle(color: Colors.red, fontStyle: FontStyle.italic),
+                        ),
                       ),
-                    );
-                  }).toList(),
+                  ],
                   onChanged: (value) {
                     setState(() => _idPagadorSeleccionado = value);
                   },
@@ -154,30 +166,52 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Column(
-                    children: widget.groupModel.miembros.entries.map((entry) {
-                      final uid = entry.key;
-                      final nombre = entry.value;
-                      final estaSeleccionado = _idsInvolucrados.contains(uid);
+                    children: [
+                      ...widget.groupModel.miembros.entries.map((entry) {
+                        final uid = entry.key;
+                        final nombre = entry.value;
+                        final estaSeleccionado = _idsInvolucrados.contains(uid);
 
-                      return CheckboxListTile(
-                        title: Text(nombre),
-                        value: estaSeleccionado,
-                        activeColor: colorGrupo,
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _idsInvolucrados.add(uid);
-                            } else {
-                              if (_idsInvolucrados.length > 1) {
-                                _idsInvolucrados.remove(uid);
+                        return CheckboxListTile(
+                          title: Text(nombre),
+                          value: estaSeleccionado,
+                          activeColor: colorGrupo,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                _idsInvolucrados.add(uid);
+                              } else {
+                                if (_idsInvolucrados.length > 1) {
+                                  _idsInvolucrados.remove(uid);
+                                }
                               }
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
+                            });
+                          },
+                        );
+                      }),
+                      // Mostrar usuarios eliminados involucrados (Solo lectura)
+                      ..._idsInvolucrados
+                          .where((id) => !widget.groupModel.miembros.containsKey(id))
+                          .map((uid) => CheckboxListTile(
+                                title: const Text("Usuario eliminado",
+                                    style: TextStyle(
+                                        color: Colors.red,
+                                        fontStyle: FontStyle.italic)),
+                                value: true,
+                                activeColor: Colors.red,
+                                dense: true,
+                                visualDensity: VisualDensity.compact,
+                                onChanged: (bool? value) {
+                                  // No permitimos desmarcarlo para no romper balances viejos
+                                  // o podemos permitir quitarlo si el usuario quiere limpiar
+                                  if (value == false && _idsInvolucrados.length > 1) {
+                                    setState(() => _idsInvolucrados.remove(uid));
+                                  }
+                                },
+                              )),
+                    ],
                   ),
                 ),
 
