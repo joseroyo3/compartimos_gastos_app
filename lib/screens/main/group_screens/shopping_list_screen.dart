@@ -308,13 +308,11 @@ class _BulkAddDialog extends StatefulWidget {
 class _BulkAddDialogState extends State<_BulkAddDialog> {
   final List<Map<String, String>> _productosTemporales = [];
   final _nombreController = TextEditingController();
-  final _descController = TextEditingController();
   final _nombreFocusNode = FocusNode();
 
   @override
   void dispose() {
     _nombreController.dispose();
-    _descController.dispose();
     _nombreFocusNode.dispose();
     super.dispose();
   }
@@ -325,10 +323,9 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
       setState(() {
         _productosTemporales.add({
           'nombre': nombre,
-          'descripcion': _descController.text.trim(),
+          'descripcion': '',
         });
         _nombreController.clear();
-        _descController.clear();
       });
       _nombreFocusNode.requestFocus();
     }
@@ -354,27 +351,15 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
                 focusedBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: widget.color)),
                 labelStyle: TextStyle(color: widget.color),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.add_circle, color: widget.color),
+                  tooltip: "Añadir a la lista",
+                  onPressed: _anadirAListaTemporal,
+                ),
               ),
               onSubmitted: (_) => _anadirAListaTemporal(),
             ),
-            TextField(
-              controller: _descController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: "Nota (Opcional)",
-                focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: widget.color)),
-                labelStyle: TextStyle(color: widget.color),
-              ),
-              onSubmitted: (_) => _anadirAListaTemporal(),
-            ),
-            const SizedBox(height: 10),
-            TextButton.icon(
-              onPressed: _anadirAListaTemporal,
-              icon: Icon(Icons.add_circle_outline, color: widget.color),
-              label: Text("Añadir a la lista temporal",
-                  style: TextStyle(color: widget.color)),
-            ),
+            const SizedBox(height: 12),
             const Divider(),
             if (_productosTemporales.isNotEmpty)
               Flexible(
