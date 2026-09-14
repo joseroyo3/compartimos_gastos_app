@@ -5,7 +5,6 @@ import '../../../models/group_model.dart';
 import '../../../models/pay_model.dart';
 import '../../../widgets/appbar_custom.dart';
 import '../../../controllers/themes_controller.dart';
-import '../../../widgets/responsive_list_container.dart';
 import 'settings_group_screen.dart';
 
 class BalanceScreen extends StatelessWidget {

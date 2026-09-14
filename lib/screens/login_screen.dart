@@ -64,13 +64,32 @@ class _LoginScreenState extends State<LoginScreen> {
       await _toggleRememberMe(true);
     }
 
-    final result = await action();
+    try {
+      final result = await action();
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (result == null) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (result == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Operación cancelada o sin resultado')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        String msg = 'Error en la autenticación';
+        if (e is FirebaseAuthException) {
+          msg = e.message ?? e.code;
+        } else {
+          msg = e.toString();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error en la autenticación')),
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }

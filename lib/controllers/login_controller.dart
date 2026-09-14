@@ -32,7 +32,7 @@ class LoginController {
       return user;
     } on FirebaseAuthException catch (e) {
       print("Error de registro: ${e.code} - ${e.message}");
-      return null;
+      rethrow;
     }
   }
 
@@ -46,7 +46,7 @@ class LoginController {
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
       print("Error de login: ${e.code} - ${e.message}");
-      return null;
+      rethrow;
     }
   }
 
@@ -143,36 +143,40 @@ class LoginController {
   // GOOGLE SIGN IN
   Future<User?> signInWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn(
-        clientId: kIsWeb
-            ? '1029109934862-n7uifpid7508a62nu2loe573hus0bo21.apps.googleusercontent.com'
-            : null,
-      );
-      
-      try {
-        await googleSignIn.signOut();
-      } catch (_) {}
+      UserCredential userCredential;
 
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (kIsWeb) {
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.setCustomParameters({'prompt': 'select_account'});
+        userCredential = await _auth.signInWithPopup(googleProvider);
+      } else {
+        final googleSignIn = GoogleSignIn();
+        try {
+          await googleSignIn.signOut();
+        } catch (_) {}
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) return null;
 
-      final userCredential = await _auth.signInWithCredential(credential);
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        userCredential = await _auth.signInWithCredential(credential);
+      }
+
       final user = userCredential.user;
-
       if (user != null) {
         await _asegurarUsuarioEnFirestore(user);
       }
       return user;
     } catch (e) {
-      print("Error Google: $e");
-      return null;
+      print("Error detallado Google: $e");
+      rethrow;
     }
   }
 
@@ -256,28 +260,34 @@ class LoginController {
   // VINCULAR GOOGLE (Para pasar de Anónimo a Google)
   Future<User?> linkWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn(
-        clientId: kIsWeb
-            ? '1029109934862-n7uifpid7508a62nu2loe573hus0bo21.apps.googleusercontent.com'
-            : null,
-      );
-      
-      try {
-        await googleSignIn.signOut();
-      } catch (_) {}
+      UserCredential? userCredential;
 
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (kIsWeb) {
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.setCustomParameters({'prompt': 'select_account'});
+        userCredential =
+            await _auth.currentUser?.linkWithPopup(googleProvider);
+      } else {
+        final googleSignIn = GoogleSignIn();
+        try {
+          await googleSignIn.signOut();
+        } catch (_) {}
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) return null;
 
-      final userCredential =
-          await _auth.currentUser?.linkWithCredential(credential);
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        userCredential =
+            await _auth.currentUser?.linkWithCredential(credential);
+      }
+
       final user = userCredential?.user;
 
       if (user != null) {
@@ -293,10 +303,10 @@ class LoginController {
       if (e.code == 'credential-already-in-use') {
         print("Esta cuenta de Google ya está vinculada a otro usuario.");
       }
-      return null;
+      rethrow;
     } catch (e) {
       print("Error vinculando con Google: $e");
-      return null;
+      rethrow;
     }
   }
 
