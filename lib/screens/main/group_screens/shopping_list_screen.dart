@@ -309,6 +309,15 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
   final List<Map<String, String>> _productosTemporales = [];
   final _nombreController = TextEditingController();
   final _descController = TextEditingController();
+  final _nombreFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _descController.dispose();
+    _nombreFocusNode.dispose();
+    super.dispose();
+  }
 
   void _anadirAListaTemporal() {
     final nombre = _nombreController.text.trim();
@@ -321,6 +330,7 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
         _nombreController.clear();
         _descController.clear();
       });
+      _nombreFocusNode.requestFocus();
     }
   }
 
@@ -335,6 +345,7 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
           children: [
             TextField(
               controller: _nombreController,
+              focusNode: _nombreFocusNode,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
@@ -344,6 +355,7 @@ class _BulkAddDialogState extends State<_BulkAddDialog> {
                     borderSide: BorderSide(color: widget.color)),
                 labelStyle: TextStyle(color: widget.color),
               ),
+              onSubmitted: (_) => _anadirAListaTemporal(),
             ),
             TextField(
               controller: _descController,
