@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:compartimos_gastos/widgets/logo_widget.dart';
 import 'package:compartimos_gastos/widgets/login_screen/auth_dialogs.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
